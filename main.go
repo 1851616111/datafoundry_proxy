@@ -42,10 +42,12 @@ func login(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
 		if len(auth) > 0 {
 			log.Println(auth)
-			token := token_proxy(auth)
+			token, status := token_proxy(auth)
 			if len(token) > 0 {
 				log.Println(token)
 				resphttp(w, http.StatusOK, []byte(token))
+			} else {
+				resphttp(w, status, nil)
 			}
 
 		} else {
@@ -63,7 +65,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 var url = "https://54.222.199.235:8443/oauth/authorize?client_id=openshift-challenging-client&response_type=token"
 
-func token_proxy(auth string) (token string) {
+func token_proxy(auth string) (token string, status int) {
 	//fmt.Println("prepear to get token from", url, "with", auth)
 
 	tr := &http.Transport{
@@ -89,10 +91,10 @@ func token_proxy(auth string) (token string) {
 			m := strings.Split(url.Fragment, "&")
 			n := proc(m)
 			r, _ := json.Marshal(n)
-			return string(r)
+			return string(r), resp.StatusCode
 		}
 	}
-	return
+	return "", resp.StatusCode
 }
 
 func proc(s []string) (m map[string]string) {
