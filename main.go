@@ -54,6 +54,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 				resphttp(w, http.StatusOK, []byte(token))
 			} else {
+				log.Println("error from server, code:", status)
 				resphttp(w, status, nil)
 			}
 
