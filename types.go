@@ -1,8 +1,8 @@
 package main
 
 type UserInfo struct {
-	Username    string `json: "username"`
-	Password    string `json: "password"`
-	Email       string `json: "email"`
-	Displayname string `json: "nickname"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Aliasname string `json:"nickname,omitempty"`
+	Email     string `json:"email"`
 }

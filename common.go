@@ -14,7 +14,7 @@ func parseRequestBody(r *http.Request, i interface{}) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println(string(b))
 	if err := json.Unmarshal(b, i); err != nil {
 		return err
 	}
