@@ -10,7 +10,7 @@ import (
 type mux struct{}
 
 var (
-	store DBStorage
+	dbstore DBStorage
 )
 
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -52,8 +52,9 @@ func main() {
 // 权限管理：权限更改。
 
 func init() {
-	store = new(Etcd)
+	dbinit(new(Etcd))
+}
 
-	store.Init()
-
+func dbinit(driver DBStorage) {
+	dbstore, _ = driver.Init()
 }
