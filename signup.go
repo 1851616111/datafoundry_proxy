@@ -1,8 +1,14 @@
 package main
 
-type UserInfo struct {
-	Username    string `json: "username"`
-	Password    string `json: "password"`
-	Email       string `json: "email"`
-	Displayname string `json: "nickname"`
+import (
+	"github.com/julienschmidt/httprouter"
+
+	"net/http"
+)
+
+func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	//fmt.Println("method:",r.Method)
+	//fmt.Println("scheme", r.URL.Scheme)
+
+	r.ParseForm()
 }
