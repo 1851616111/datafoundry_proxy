@@ -9,6 +9,10 @@ import (
 
 type mux struct{}
 
+var (
+	store DBStorage
+)
+
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
 	http.Error(w, "", http.StatusForbidden)
@@ -29,7 +33,8 @@ func main() {
 
 	router.GET("/lapi/authenticity_token", Hello)
 	router.GET("/lapi/login", Login)
-	router.POST("/lapi/signup", Hello)
+	router.GET("/login", Login)
+	router.POST("/lapi/signup", SignUp)
 	router.PATCH("/lapi/user/~", Hello)
 	router.GET("/lapi/user/~", Hello)
 	router.POST("/lapi/password_reset", Hello) //account_identifier with token.
@@ -38,10 +43,17 @@ func main() {
 
 	router.NotFound = &mux{}
 
-	log.Fatal(http.ListenAndServe(":8080", router))
+	log.Fatal(http.ListenAndServe(":9090", router))
 }
 
 // 用户：登录，注册，更新，发验证，激活。查询，密码修改，密码找回。
 // 消息：
 // 组织：创建，删除，成员邀请，成员删除，进组织确认，退出组织，
 // 权限管理：权限更改。
+
+func init() {
+	store = new(Etcd)
+
+	store.Init()
+
+}
