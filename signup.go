@@ -69,15 +69,18 @@ func (usr *UserInfo) Create() error {
 			glog.Fatal(err)
 			return err
 		} else {
-			glog.Info("user already exist on ldap.")
-			return usr.AddToEtcd()
+			glog.Infof("user %s already exist on ldap.", usr.Username)
 		}
 	}
-	return nil
+	return usr.AddToEtcd()
 }
 
 func (usr *UserInfo) AddToEtcd() error {
-	return dbstore.SetValue(ETCDUSERPREFIX+usr.Username, usr, false)
+	pass := usr.Password
+	usr.Password = ""
+	err := dbstore.SetValue(ETCDUSERPREFIX+usr.Username, usr, false)
+	usr.Password = pass
+	return err
 }
 
 func (usr *UserInfo) AddToLdap() error {
@@ -87,9 +90,9 @@ func (usr *UserInfo) AddToLdap() error {
 	}
 	defer l.Close()
 
-	err = l.Bind(fmt.Sprintf(LdapEnv.Get(LDAP_BASE_DN), LdapEnv.Get(LDAP_ADMIN_USER)), LdapEnv.Get(LDAP_ADMIN_PASSWORD))
+	err = l.Bind(LdapEnv.Get(LDAP_ADMIN_USER), LdapEnv.Get(LDAP_ADMIN_PASSWORD))
 	if err != nil {
-		glog.Fatal(err)
+		glog.Error(err)
 	} else {
 		glog.Info("bind successfully.")
 	}
