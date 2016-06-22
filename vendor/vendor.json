@@ -15,6 +15,12 @@
 			"revisionTime": "2015-10-26T16:03:18Z"
 		},
 		{
+			"checksumSHA1": "t8HdpT0vQu2YOH6GcTRNgyj0loE=",
+			"path": "github.com/go-ldap/ldap",
+			"revision": "8a8cb05b90c95296d1d239c6c495ddf88d9aa100",
+			"revisionTime": "2016-06-14T18:42:19Z"
+		},
+		{
 			"checksumSHA1": "HmbftipkadrLlCfzzVQ+iFHbl6g=",
 			"path": "github.com/golang/glog",
 			"revision": "23def4e6c14b4da8ac2ed8007337bc5eb5007998",

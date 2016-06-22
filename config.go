@@ -13,6 +13,11 @@ const (
 	ETCD_HTTP_PORT string = "ETCD_HTTP_PORT"
 	ETCD_USERNAME  string = "ETCD_USERNAME"
 	ETCD_PASSWORD  string = "ETCD_PASSWORD"
+
+	LDAP_HOST_ADDR      string = "LDAP_HOST_ADDR"
+	LDAP_ADMIN_USER     string = "LDAP_ADMIN_USER"
+	LDAP_ADMIN_PASSWORD string = "LDAP_ADMIN_PASSWORD"
+	LDAP_BASE_DN        string = "LDAP_BASE_DN" //"cn=%s,ou=Users,dc=openstack,dc=org"
 )
 
 var (
@@ -23,8 +28,13 @@ var (
 			ETCD_PASSWORD:  "",
 		},
 	}
-	GithubApplicationEnv Env = &EnvOnce{
-		envs: map[string]string{"GITHUB_REDIRECT_URL": "", "GITHUB_CLIENT_ID": "", "GITHUB_CLIENT_SECRET": ""},
+	LdapEnv Env = &EnvOnce{
+		envs: map[string]string{
+			LDAP_HOST_ADDR:      "",
+			LDAP_ADMIN_USER:     "",
+			LDAP_ADMIN_PASSWORD: "",
+			LDAP_BASE_DN:        "",
+		},
 	}
 	DatafoundryEnv Env = &EnvOnce{
 		envs: map[string]string{"DATAFOUNDRY_HOST_ADDR": ""},
@@ -79,4 +89,15 @@ func (e *EnvOnce) Print() {
 
 func envNil(k string) {
 	log.Fatalf("[Env] %s must not be nil.", k)
+}
+
+func init() {
+
+	EtcdStorageEnv.Init()
+	EtcdStorageEnv.Print()
+	//EtcdStorageEnv.Validate(envNil)
+
+	LdapEnv.Init()
+	LdapEnv.Print()
+	LdapEnv.Validate(envNil)
 }
