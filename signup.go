@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"github.com/go-ldap/ldap"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
@@ -62,5 +64,69 @@ func (usr *UserInfo) Validate() error {
 }
 
 func (usr *UserInfo) Create() error {
+	if err := usr.AddToLdap(); err != nil {
+		if !checkIfExistldap(err) {
+			glog.Fatal(err)
+			return err
+		} else {
+			glog.Info("user already exist on ldap.")
+			return usr.AddToEtcd()
+		}
+	}
+	return nil
+}
+
+func (usr *UserInfo) AddToEtcd() error {
 	return dbstore.SetValue(ETCDUSERPREFIX+usr.Username, usr, false)
+}
+
+func (usr *UserInfo) AddToLdap() error {
+	l, err := ldap.Dial("tcp", fmt.Sprintf("%s", LdapEnv.Get(LDAP_HOST_ADDR)))
+	if err != nil {
+		glog.Fatal(err)
+	}
+	defer l.Close()
+
+	err = l.Bind(fmt.Sprintf(LdapEnv.Get(LDAP_BASE_DN), LdapEnv.Get(LDAP_ADMIN_USER)), LdapEnv.Get(LDAP_ADMIN_PASSWORD))
+	if err != nil {
+		glog.Fatal(err)
+	} else {
+		glog.Info("bind successfully.")
+	}
+
+	request := ldap.NewAddRequest(fmt.Sprintf(LdapEnv.Get(LDAP_BASE_DN), usr.Username))
+	request.Attribute("objectclass", []string{"inetOrgPerson"})
+	request.Attribute("sn", []string{usr.Username})
+	request.Attribute("uid", []string{usr.Username})
+	request.Attribute("userpassword", []string{usr.Password})
+	request.Attribute("mail", []string{usr.Email})
+	request.Attribute("ou", []string{"DataFoundry"})
+
+	err = l.Add(request)
+	if err != nil {
+		return err
+		/*
+			if !checkIfExistldap(err) {
+				glog.Fatal(err)
+				return err
+			} else {
+				glog.Info("user aready exist.")
+				return errors.New("user already exist.")
+			}*/
+	} else {
+		glog.Info("add to ldap successfully.")
+	}
+	return nil
+}
+
+func checkIfExistldap(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ldap.Error); ok && e.ResultCode == ldap.LDAPResultEntryAlreadyExists {
+		return true
+	}
+
+	return false
 }

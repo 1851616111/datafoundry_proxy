@@ -21,9 +21,6 @@ const (
 )
 
 func (s *Etcd) Init() (DBStorage, error) {
-	EtcdStorageEnv.Init()
-	EtcdStorageEnv.Print()
-	//EtcdStorageEnv.Validate(envNil)
 
 	//初始化etcd客户端
 	cfg := client.Config{
@@ -41,7 +38,7 @@ func (s *Etcd) Init() (DBStorage, error) {
 	} else {
 		s.client = client.NewKeysAPI(c)
 		//s.prepare()
-		glog.Info("etcd init successfully.")
+		glog.Info("etcd init successfully.TODO:password never should be store into db.")
 		return s, nil
 	}
 
