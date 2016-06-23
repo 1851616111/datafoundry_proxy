@@ -1,12 +1,19 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 )
+
+var ErrNotFound = errors.New("request resouce not found")
+var ErrAuthorizedRequired = errors.New("authorized required")
 
 func parseRequestBody(r *http.Request, i interface{}) error {
 	b, err := ioutil.ReadAll(r.Body)
@@ -34,6 +41,18 @@ func httpAddrMaker(addr string) string {
 	return addr
 }
 
+func httpsAddrMaker(addr string) string {
+	if strings.HasSuffix(addr, "/") {
+		addr = strings.TrimRight(addr, "/")
+	}
+
+	if !strings.HasPrefix(addr, "https://") {
+		return fmt.Sprintf("https://%s", addr)
+	}
+
+	return addr
+}
+
 func Schemastripper(addr string) string {
 	schemas := []string{"https://", "http://"}
 
@@ -44,4 +63,40 @@ func Schemastripper(addr string) string {
 	}
 
 	return ""
+}
+
+func stripBearToken(authValue string) string {
+	return strings.TrimSpace(strings.TrimLeft(authValue, "Bearer"))
+}
+
+func convertDFValidateName(name string) string {
+	return strings.Replace(name, ".", "-", -1)
+}
+
+func contains(l []string, s string) bool {
+	for _, str := range l {
+		if str == s {
+			return true
+		}
+	}
+	return false
+}
+
+func getMd5(content []byte) string {
+	md5Ctx := md5.New()
+	md5Ctx.Write(content)
+	cipherStr := md5Ctx.Sum(nil)
+	return hex.EncodeToString(cipherStr)
+}
+
+func base64Encode(src []byte) string {
+	return base64.StdEncoding.EncodeToString(src)
+}
+
+func base64Decode(s string) ([]byte, error) {
+	return base64.StdEncoding.DecodeString(s)
+}
+
+func etcdProfilePath(username string) string {
+	return fmt.Sprintf(ETCDUSERPROFILE, username)
 }

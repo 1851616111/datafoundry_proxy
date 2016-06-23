@@ -9,10 +9,6 @@ import (
 	"net/http"
 )
 
-const (
-	ETCDUSERPREFIX = ETCDPREFIX + "users/"
-)
-
 func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	//fmt.Println("method:",r.Method)
 	//fmt.Println("scheme", r.URL.Scheme)
@@ -43,7 +39,7 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 func (usr *UserInfo) IfExist() (bool, error) {
 
-	_, err := dbstore.GetValue(ETCDUSERPREFIX + usr.Username)
+	_, err := dbstore.GetValue(etcdProfilePath(usr.Username))
 	if err != nil {
 		if checkIfNotFound(err) {
 			return false, nil
@@ -78,7 +74,8 @@ func (usr *UserInfo) Create() error {
 func (usr *UserInfo) AddToEtcd() error {
 	pass := usr.Password
 	usr.Password = ""
-	err := dbstore.SetValue(ETCDUSERPREFIX+usr.Username, usr, false)
+	usr.Status = UserStatusInactive
+	err := dbstore.SetValue(etcdProfilePath(usr.Username), usr, false)
 	usr.Password = pass
 	return err
 }
