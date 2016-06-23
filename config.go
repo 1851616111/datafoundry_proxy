@@ -18,6 +18,13 @@ const (
 	LDAP_ADMIN_USER     string = "LDAP_ADMIN_USER"
 	LDAP_ADMIN_PASSWORD string = "LDAP_ADMIN_PASSWORD"
 	LDAP_BASE_DN        string = "LDAP_BASE_DN" //"cn=%s,ou=Users,dc=openstack,dc=org"
+
+	DATAFOUNDRY_HOST_ADDR string = "DATAFOUNDRY_HOST_ADDR"
+)
+const (
+	ETCDPREFIX      string = "datafoundry.io/"
+	ETCDUSERPREFIX  string = ETCDPREFIX + "users/"
+	ETCDUSERPROFILE string = ETCDUSERPREFIX + "%s/profile"
 )
 
 var (
@@ -36,18 +43,23 @@ var (
 			LDAP_BASE_DN:        "",
 		},
 	}
-	DatafoundryEnv Env = &EnvOnce{
-		envs: map[string]string{"DATAFOUNDRY_HOST_ADDR": ""},
+	DataFoundryEnv Env = &EnvOnce{
+		envs: map[string]string{
+			DATAFOUNDRY_HOST_ADDR: "dev.dataos.io:8443",
+		},
 	}
 	RedisEnv Env = &EnvOnce{
 		envs: map[string]string{"Redis_BackingService_Name": ""},
 	}
+	DF_HOST     string
+	DF_API_Auth string
 )
 
 type Env interface {
 	Init()
 	Validate(func(k string))
 	Get(name string) string
+	Set(key, value string)
 	Print()
 }
 
@@ -81,6 +93,11 @@ func (e *EnvOnce) Get(name string) string {
 	return e.envs[name]
 }
 
+func (e *EnvOnce) Set(key, value string) {
+	e.envs[key] = value
+	return
+}
+
 func (e *EnvOnce) Print() {
 	for k, v := range e.envs {
 		fmt.Printf("[Env] %s=%s\n", k, v)
@@ -100,4 +117,13 @@ func init() {
 	LdapEnv.Init()
 	LdapEnv.Print()
 	LdapEnv.Validate(envNil)
+
+	DataFoundryEnv.Init()
+	DataFoundryEnv.Set(DATAFOUNDRY_HOST_ADDR, httpsAddrMaker(DataFoundryEnv.Get(DATAFOUNDRY_HOST_ADDR)))
+	DataFoundryEnv.Print()
+
+	DF_HOST = DataFoundryEnv.Get(DATAFOUNDRY_HOST_ADDR)
+	DF_API_Auth = DF_HOST + "/oapi/v1/users/~"
+	log.Println(DF_HOST, DF_API_Auth)
+
 }

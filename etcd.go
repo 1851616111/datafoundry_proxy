@@ -16,10 +16,6 @@ type Etcd struct {
 	client client.KeysAPI
 }
 
-const (
-	ETCDPREFIX string = "datafoundry.io/"
-)
-
 func (s *Etcd) Init() (DBStorage, error) {
 
 	//初始化etcd客户端
@@ -46,9 +42,13 @@ func (s *Etcd) Init() (DBStorage, error) {
 
 func (s *Etcd) GetValue(key string) (interface{}, error) {
 	response, err := s.client.Get(context.Background(), key, nil)
-	glog.Infof("%+v", response)
+	if err == nil {
+		glog.Infof("%+v", response.Node.Value)
+		return response.Node.Value, nil
+	} else {
+		return nil, err
+	}
 
-	return response, err
 }
 
 func (s *Etcd) SetValue(key string, value interface{}, dir bool) error {
