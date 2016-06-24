@@ -71,6 +71,10 @@ func (usr *UserInfo) Create() error {
 	return usr.AddToEtcd()
 }
 
+func (usr *UserInfo) Update(username string) error {
+	return dbstore.SetValue(etcdProfilePath(username), usr, false)
+}
+
 func (usr *UserInfo) AddToEtcd() error {
 	pass := usr.Password
 	usr.Password = ""
