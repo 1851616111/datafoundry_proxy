@@ -22,6 +22,7 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		glog.Infof("%+v", usr)
 		if err := usr.Validate(); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
 		}
 		if exist, err := usr.IfExist(); !exist && err == nil {
 
@@ -29,7 +30,7 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			} else {
 				if usr.Status.FromLdap {
-					http.Error(w, "user already exist on ldap.", http.StatusConflict)
+					http.Error(w, "user already exist on ldap.", 422)
 				} else {
 					http.Error(w, "", http.StatusOK)
 				}
@@ -46,6 +47,7 @@ func (usr *UserInfo) IfExist() (bool, error) {
 
 	_, err := dbstore.GetValue(etcdProfilePath(usr.Username))
 	if err != nil {
+		glog.Infoln(err)
 		if checkIfNotFound(err) {
 			return false, nil
 		} else {
@@ -59,7 +61,7 @@ func (usr *UserInfo) Validate() error {
 	if len(usr.Username) == 0 ||
 		len(usr.Email) == 0 ||
 		len(usr.Password) == 0 {
-		return errors.New("err.")
+		return errors.New("err, register info incomplete.")
 	}
 	return nil
 }
@@ -96,13 +98,15 @@ func (usr *UserInfo) AddToEtcd() error {
 func (usr *UserInfo) AddToLdap() error {
 	l, err := ldap.Dial("tcp", fmt.Sprintf("%s", LdapEnv.Get(LDAP_HOST_ADDR)))
 	if err != nil {
-		glog.Fatal(err)
+		glog.Infoln(err)
+		return err
 	}
 	defer l.Close()
 
 	err = l.Bind(LdapEnv.Get(LDAP_ADMIN_USER), LdapEnv.Get(LDAP_ADMIN_PASSWORD))
 	if err != nil {
-		glog.Error(err)
+		glog.Infoln(err)
+		return err
 	} else {
 		glog.Info("bind successfully.")
 	}
