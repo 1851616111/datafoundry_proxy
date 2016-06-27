@@ -37,8 +37,8 @@ func main() {
 	router.POST("/lapi/signup", SignUp)
 	//router.PUT("/lapi/user/profile", Profile)
 	router.GET("/lapi/user/profile", Profile)
-	router.POST("/lapi/password_reset", Hello) //account_identifier with token.
-	router.PUT("/lapi/password_modify", Hello) //account_identifier with token.
+	router.POST("/lapi/password_reset", Hello)          //account_identifier with token.
+	router.PUT("/lapi/password_modify", PasswordModify) //account_identifier with token.
 	router.POST("/lapi/send_verify_email", Hello)
 	router.GET("/lapi/verify_account", Hello)
 
