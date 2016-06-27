@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 
 #these envs below should be export by manual:
