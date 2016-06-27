@@ -1,0 +1,15 @@
+#!/bin/bash
+
+
+#these envs below should be export by manual:
+# LDAP_HOST_ADDR
+# LDAP_ADMIN_USER
+# LDAP_ADMIN_PASSWORD
+# LDAP_BASE_DN
+# ETCDPREFIX
+
+export ETCD_HTTP_ADDR=${BSI_${ETCDPREFIX}_HOST}
+export ETCD_USERNAME=${BSI_${ETCDPREFIX}_USERNAME}
+export ETCD_PASSWORD=${BSI_${ETCDPREFIX}_PASSWORD}
+
+./oauth-proxy
