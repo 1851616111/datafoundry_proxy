@@ -7,6 +7,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
+	"time"
 )
 
 func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -27,7 +28,11 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			if err = usr.Create(); err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 			} else {
-				http.Error(w, "", http.StatusOK)
+				if usr.Status.FromLdap {
+					http.Error(w, "user already exist on ldap.", http.StatusConflict)
+				} else {
+					http.Error(w, "", http.StatusOK)
+				}
 			}
 		} else if exist {
 			http.Error(w, "user is already exist.", http.StatusConflict)
@@ -66,6 +71,7 @@ func (usr *UserInfo) Create() error {
 			return err
 		} else {
 			glog.Infof("user %s already exist on ldap.", usr.Username)
+			usr.Status.FromLdap = true
 		}
 	}
 	return usr.AddToEtcd()
@@ -78,7 +84,10 @@ func (usr *UserInfo) Update(username string) error {
 func (usr *UserInfo) AddToEtcd() error {
 	pass := usr.Password
 	usr.Password = ""
-	usr.Status = UserStatusInactive
+	usr.Status.Phase = UserStatusInactive
+	usr.Status.Active = false
+	usr.Status.Initialized = false
+	usr.CreateTime = time.Now().Format(time.RFC3339)
 	err := dbstore.SetValue(etcdProfilePath(usr.Username), usr, false)
 	usr.Password = pass
 	return err

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -21,7 +22,7 @@ func parseRequestBody(r *http.Request, i interface{}) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(b))
+	glog.Infoln("Request Body:", string(b))
 	if err := json.Unmarshal(b, i); err != nil {
 		return err
 	}
@@ -99,4 +100,11 @@ func base64Decode(s string) ([]byte, error) {
 
 func etcdProfilePath(username string) string {
 	return fmt.Sprintf(ETCDUSERPROFILE, username)
+}
+
+func ldapUser(user string) (ldapuser string) {
+	ldapuser = fmt.Sprintf(LdapEnv.Get(LDAP_BASE_DN), user)
+	glog.Infoln("user:", ldapuser)
+	return ldapuser
+
 }
