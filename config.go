@@ -30,7 +30,7 @@ const (
 var (
 	EtcdStorageEnv Env = &EnvOnce{
 		envs: map[string]string{
-			ETCD_HTTP_ADDR: "127.0.0.1:2379",
+			ETCD_HTTP_ADDR: "http://127.0.0.1:2379",
 			ETCD_USERNAME:  "",
 			ETCD_PASSWORD:  "",
 		},
