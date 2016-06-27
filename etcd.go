@@ -35,6 +35,7 @@ func (s *Etcd) Init() (DBStorage, error) {
 		s.client = client.NewKeysAPI(c)
 		//s.prepare()
 		glog.Info("etcd init successfully.TODO:password never should be store into db.")
+		glog.Infoln(cfg.Endpoints, cfg.Username, cfg.Password)
 		return s, nil
 	}
 
