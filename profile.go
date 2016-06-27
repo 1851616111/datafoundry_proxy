@@ -9,16 +9,41 @@ import (
 func Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
 
-	if username, err := authedIdentities(r); err != nil {
+	var username string
+	var err error
+
+	if username, err = authedIdentities(r); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-	} else {
+		return
+	}
+	r.ParseForm()
+	switch r.Method {
+	case "GET":
 		if userProfile, err := getProfile(username); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		} else {
 			glog.Infoln(userProfile)
 			http.Error(w, userProfile.(string), http.StatusOK)
 		}
+	case "PUT":
+		glog.Infoln("put called..")
+		usr := new(UserInfo)
+		if err := parseRequestBody(r, usr); err != nil {
+			glog.Error("read request body error.", err)
+			http.Error(w, err.Error(), 422)
+		} else {
+			if usr.Username != username {
+				http.Error(w, "", http.StatusBadRequest)
+			}
+			if err = usr.Update(username); err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+			} else {
+				http.Error(w, "", http.StatusOK)
+			}
+		}
+
 	}
+	return
 
 }
 
