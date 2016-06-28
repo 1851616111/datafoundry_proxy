@@ -34,7 +34,7 @@ func (s *Etcd) Init() (DBStorage, error) {
 	} else {
 		s.client = client.NewKeysAPI(c)
 		//s.prepare()
-		glog.Info("etcd init successfully.TODO:password never should be store into db.")
+		glog.Info("etcd init successfully.")
 		glog.Infoln(cfg.Endpoints, cfg.Username, cfg.Password)
 		return s, nil
 	}
@@ -70,15 +70,41 @@ func (s *Etcd) SetValue(key string, value interface{}, dir bool) error {
 	return nil
 }
 
+func (s *Etcd) SetValuebyTTL(key string, value interface{}, ttl time.Duration) error {
+	valuetype := reflect.TypeOf(value).Kind()
+	switch valuetype {
+	case reflect.String:
+		_, err := s.client.Set(context.Background(), key, value.(string), &client.SetOptions{Dir: false, TTL: ttl})
+		return err
+	case reflect.Struct, reflect.Ptr, reflect.Map:
+		if b, err := json.Marshal(value); err != nil {
+		} else {
+			_, err := s.client.Set(context.Background(), key, string(b), &client.SetOptions{Dir: false, TTL: ttl})
+			return err
+		}
+	default:
+		return errors.New(fmt.Sprintf("unsupport value type %s", valuetype.String()))
+	}
+	return nil
+}
+
+func (s *Etcd) Delete(key string, dir bool) error {
+	_, err := s.client.Delete(context.Background(), key, &client.DeleteOptions{Dir: dir})
+	if err != nil {
+		glog.Error(err)
+	}
+	return err
+}
+
 func (s *Etcd) prepare() {
 	glog.Info("prepare....")
-	_, err := s.GetValue(ETCDUSERPREFIX)
+	_, err := s.GetValue(ETCDUserPrefix)
 	if err != nil {
 		glog.Info("err///////", err)
 	}
 	if checkIfNotFound(err) {
 		glog.Info("init etcd structure..")
-		_, err = s.client.Set(context.Background(), ETCDUSERPREFIX, "", &client.SetOptions{Dir: true})
+		_, err = s.client.Set(context.Background(), ETCDUserPrefix, "", &client.SetOptions{Dir: true})
 	}
 	if err != nil {
 		glog.Error(err)

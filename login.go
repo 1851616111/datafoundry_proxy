@@ -5,8 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -25,14 +25,14 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	case "GET":
 		auth := r.Header.Get("Authorization")
 		if len(auth) > 0 {
-			log.Println(auth)
+			glog.Infoln(auth)
 			token, status := token_proxy(auth)
 			if len(token) > 0 {
-				log.Println(token)
+				glog.Infoln(token)
 
 				resphttp(w, http.StatusOK, []byte(token))
 			} else {
-				log.Println("error from server, code:", status)
+				glog.Infoln("error from server, code:", status)
 				resphttp(w, status, nil)
 			}
 
@@ -53,20 +53,20 @@ func logingitlab(basic string, auth map[string]string) {
 	//log.Println(basic, auth)
 	var bearer, posturl string
 	if len(auth["token_type"]) == 0 || len(auth["access_token"]) == 0 {
-		log.Println(auth, "doesn't contain a complete token")
+		glog.Infoln(auth, "doesn't contain a complete token")
 	} else {
 		bearer = auth["token_type"] + " " + auth["access_token"]
 	}
 
 	b64auth := strings.Split(basic, " ")
 	if len(b64auth) != 2 {
-		log.Println("basic string error.")
+		glog.Infoln("basic string error.")
 		return
 	} else {
 		payload, _ := base64.StdEncoding.DecodeString(b64auth[1])
 		pair := strings.Split(string(payload), ":")
 		if len(pair) != 2 {
-			log.Println(pair, "doesn't contain a username or password.")
+			glog.Infoln(pair, "doesn't contain a username or password.")
 			return
 		} else {
 			posturl = fmt.Sprintf("%s?host=%s&username=%s&password=%s", oauthurl, gitlaburl, pair[0], pair[1])
@@ -83,9 +83,9 @@ func logingitlab(basic string, auth map[string]string) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		glog.Error(err)
 	} else {
-		log.Println(req.Host, req.Method, req.URL.RequestURI(), req.Proto, resp.StatusCode)
+		glog.Infoln(req.Host, req.Method, req.URL.RequestURI(), req.Proto, resp.StatusCode)
 	}
 	return
 }
@@ -108,7 +108,7 @@ func token_proxy(auth string) (token string, status int) {
 
 	//resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		glog.Error(err)
 	} else {
 		url, err := resp.Location()
 		if err == nil {
@@ -155,7 +155,7 @@ func init() {
 	if len(gitserver) > 0 {
 		gitlaburl = gitserver
 	}
-	log.Println("apiserver", apiserver)
-	log.Println("oauthurl", oauthurl)
-	log.Println("gitlaburl", gitlaburl)
+	glog.Infoln("apiserver", apiserver)
+	glog.Infoln("oauthurl", oauthurl)
+	glog.Infoln("gitlaburl", gitlaburl)
 }

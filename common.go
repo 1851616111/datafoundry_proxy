@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/md5"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -99,7 +100,11 @@ func base64Decode(s string) ([]byte, error) {
 }
 
 func etcdProfilePath(username string) string {
-	return fmt.Sprintf(ETCDUSERPROFILE, username)
+	return fmt.Sprintf(ETCDUserProfile, username)
+}
+
+func etcdGeneratePath(path, key string) string {
+	return fmt.Sprintf(path, key)
 }
 
 func ldapUser(user string) (ldapuser string) {
@@ -107,4 +112,15 @@ func ldapUser(user string) (ldapuser string) {
 	glog.Infoln("user:", ldapuser)
 	return ldapuser
 
+}
+
+func genRandomToken() (string, error) {
+	c := 16
+	b := make([]byte, c)
+	_, err := rand.Read(b)
+	if err != nil {
+		glog.Error("error:", err)
+		return "", err
+	}
+	return fmt.Sprintf("%x", b), nil
 }
