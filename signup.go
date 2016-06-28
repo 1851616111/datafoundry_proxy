@@ -33,6 +33,12 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 					http.Error(w, "user already exist on ldap.", 422)
 				} else {
 					http.Error(w, "", http.StatusOK)
+
+					go func() {
+						if err := usr.SendVerifyMail(); err != nil {
+							glog.Error(err)
+						}
+					}()
 				}
 			}
 		} else if exist {
@@ -58,11 +64,19 @@ func (usr *UserInfo) IfExist() (bool, error) {
 }
 
 func (usr *UserInfo) Validate() error {
-	if len(usr.Username) == 0 ||
-		len(usr.Email) == 0 ||
-		len(usr.Password) == 0 {
-		return errors.New("err, register info incomplete.")
+	if ok, reason := ValidateUserName(usr.Username, false); !ok {
+		return errors.New(reason)
 	}
+
+	if ok, reason := ValidateEmail(usr.Email); !ok {
+		return errors.New(reason)
+	}
+
+	if len(usr.Password) > 12 ||
+		len(usr.Password) < 8 {
+		return errors.New("password must be between 8 and 12 characters long.")
+	}
+
 	return nil
 }
 
@@ -134,6 +148,31 @@ func (usr *UserInfo) AddToLdap() error {
 		glog.Info("add to ldap successfully.")
 	}
 	return nil
+}
+
+func (usr *UserInfo) SendVerifyMail() error {
+	verifytoken, err := usr.AddToVerify()
+	if err != nil {
+		glog.Error(err)
+		return err
+	}
+	link := httpAddrMaker(DataFoundryEnv.Get(DATAFOUNDRY_API_ADDR)) + "/verify_account/" + verifytoken
+	message := fmt.Sprintf(Message, usr.Username, link)
+	return SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
+}
+
+var Subject string = "Welcome to Datafoundry"
+var Message string = `Hello %s, <br />please click <a href="%s">link</a> to verify your account, the activation link will be expire after 24 hours.`
+
+func (user *UserInfo) AddToVerify() (verifytoken string, err error) {
+	verifytoken, err = genRandomToken()
+	if err != nil {
+		glog.Error(err)
+		return
+	}
+	glog.Infoln("token:", verifytoken, "user:", user.Username)
+	err = dbstore.SetValuebyTTL(etcdGeneratePath(ETCDUserVerify, verifytoken), user.Username, time.Hour*24)
+	return
 }
 
 func checkIfExistldap(err error) bool {

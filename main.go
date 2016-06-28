@@ -40,7 +40,7 @@ func main() {
 	router.POST("/lapi/password_reset", Hello)          //account_identifier with token.
 	router.PUT("/lapi/password_modify", PasswordModify) //account_identifier with token.
 	router.POST("/lapi/send_verify_email", Hello)
-	router.GET("/lapi/verify_account", Hello)
+	router.GET("/verify_account/:token", VerifyAccount)
 
 	router.NotFound = &mux{}
 
@@ -54,6 +54,7 @@ func main() {
 
 func init() {
 	dbinit(new(Etcd))
+
 }
 
 func dbinit(driver DBStorage) {

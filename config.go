@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"flag"
+	"github.com/golang/glog"
 	"os"
 	"strings"
 	"sync"
@@ -20,11 +20,13 @@ const (
 	LDAP_BASE_DN        string = "LDAP_BASE_DN" //"cn=%s,ou=Users,dc=openstack,dc=org"
 
 	DATAFOUNDRY_HOST_ADDR string = "DATAFOUNDRY_HOST_ADDR"
+	DATAFOUNDRY_API_ADDR  string = "DATAFOUNDRY_API_ADDR"
 )
 const (
-	ETCDPREFIX      string = "datafoundry.io/"
-	ETCDUSERPREFIX  string = ETCDPREFIX + "users/"
-	ETCDUSERPROFILE string = ETCDUSERPREFIX + "%s/profile"
+	ETCDPrefix      string = "datafoundry.io/"
+	ETCDUserPrefix  string = ETCDPrefix + "users/"
+	ETCDUserProfile string = ETCDUserPrefix + "%s/profile"
+	ETCDUserVerify  string = ETCDPrefix + "verify/%s"
 )
 
 var (
@@ -46,6 +48,7 @@ var (
 	DataFoundryEnv Env = &EnvOnce{
 		envs: map[string]string{
 			DATAFOUNDRY_HOST_ADDR: "dev.dataos.io:8443",
+			DATAFOUNDRY_API_ADDR:  "datafoundry.stage.app.dataos.io",
 		},
 	}
 	RedisEnv Env = &EnvOnce{
@@ -100,15 +103,17 @@ func (e *EnvOnce) Set(key, value string) {
 
 func (e *EnvOnce) Print() {
 	for k, v := range e.envs {
-		fmt.Printf("[Env] %s=%s\n", k, v)
+		glog.Infof("[Env] %s=%s\n", k, v)
 	}
 }
 
 func envNil(k string) {
-	log.Fatalf("[Env] %s must not be nil.", k)
+	glog.Errorf("[Env] %s must not be nil.", k)
 }
 
 func init() {
+
+	flag.Parse()
 
 	EtcdStorageEnv.Init()
 	EtcdStorageEnv.Print()
@@ -124,6 +129,6 @@ func init() {
 
 	DF_HOST = DataFoundryEnv.Get(DATAFOUNDRY_HOST_ADDR)
 	DF_API_Auth = DF_HOST + "/oapi/v1/users/~"
-	log.Println(DF_HOST, DF_API_Auth)
+	glog.Info(DF_HOST, DF_API_Auth)
 
 }
