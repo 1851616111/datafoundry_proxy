@@ -49,7 +49,8 @@ func main() {
 	router.POST("/lapi/orgs/:org/invite", InviteOrganization)
 	router.PUT("/lapi/orgs/:org/accept", AcceptOrganization)
 	router.PUT("/lapi/orgs/:org/leave", LeaveOrganization)
-	router.PUT("/lapi/orgs/:org/:action", ManageOrganization) //
+	router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
+	router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,
 
 	router.NotFound = &mux{}
