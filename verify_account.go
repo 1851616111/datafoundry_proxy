@@ -31,7 +31,7 @@ func VerifyAccount(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		glog.Error(err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else {
-		http.Error(w, "", http.StatusOK)
+		http.Error(w, "account verified.", http.StatusOK)
 	}
 }
 
