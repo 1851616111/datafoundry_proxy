@@ -31,16 +31,26 @@ func main() {
 	//router.GET("/", Forbidden)
 	router.GET("/hello/:name", Hello)
 
+	//users
 	router.GET("/lapi/authenticity_token", Hello)
 	router.GET("/lapi/login", Login)
 	router.GET("/login", Login)
 	router.POST("/lapi/signup", SignUp)
-	//router.PUT("/lapi/user/profile", Profile)
 	router.GET("/lapi/user/profile", Profile)
 	router.POST("/lapi/password_reset", Hello)          //account_identifier with token.
 	router.PUT("/lapi/password_modify", PasswordModify) //account_identifier with token.
 	router.POST("/lapi/send_verify_email", Hello)
 	router.GET("/verify_account/:token", VerifyAccount)
+
+	//organizations
+	router.GET("/lapi/orgs", ListOrganizations)
+	router.POST("/lapi/orgs", CreateOrganization)
+	router.GET("/lapi/orgs/:org", GetOrganization)
+	router.POST("/lapi/orgs/:org/invite", InviteOrganization)
+	router.PUT("/lapi/orgs/:org/accept", AcceptOrganization)
+	router.PUT("/lapi/orgs/:org/leave", LeaveOrganization)
+	router.PUT("/lapi/orgs/:org/:action", ManageOrganization) //
+	//action=privileged,remove,
 
 	router.NotFound = &mux{}
 
