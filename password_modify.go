@@ -32,8 +32,8 @@ func (p *Password) Modify(username string) error {
 	if len(p.NewPassword) == 0 || len(p.OldPassword) == 0 {
 		return errors.New("password can't be empty.")
 	}
-	if len(p.NewPassword) > 63 || len(p.OldPassword) > 63 {
-		return errors.New("password length too long.")
+	if len(p.NewPassword) > 12 || len(p.NewPassword) < 8 {
+		return errors.New("password length must be 8 to 12 characters.")
 	}
 
 	return p.ModifyPasswordLdap(username)
