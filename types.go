@@ -30,15 +30,32 @@ type Password struct {
 }
 
 type Orgnazition struct {
-	Name        string      `json:"name"`
-	DisplayName string      `json:"display_name"`
-	CreateTime  string      `json:"creation_time"`
-	MemberList  []OrgMember `json:"members"`
+	ID         string      `json:"id"`
+	Name       string      `json:"name"`
+	CreateBy   string      `json:"create_by"`
+	CreateTime string      `json:"creation_time"`
+	MemberList []OrgMember `json:"members"`
 }
 
 type OrgMember struct {
-	MemberName   string `json:"member_name"`
-	IsAdmin      bool   `json:"privileged"`
-	PrivilegedBy string `json:"privileged_by"`
-	JoinedAt     string `json:"joined_at"`
+	MemberName   string          `json:"member_name"`
+	IsAdmin      bool            `json:"privileged"`
+	PrivilegedBy string          `json:"privileged_by"`
+	JoinedAt     string          `json:"joined_at"`
+	Status       OrgMemberStatus `json:"status"`
+}
+
+type OrgMemberStatus string
+
+const (
+	OrgMemberStatusInvited OrgMemberStatus = "invited"
+	OrgMemberStatusjoined  OrgMemberStatus = "joined"
+)
+
+var ManageActionList = []string{
+	"invite",
+	"accept",
+	"leave",
+	"remove",
+	"privileged",
 }
