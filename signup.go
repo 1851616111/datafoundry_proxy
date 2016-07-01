@@ -1,11 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/go-ldap/ldap"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
+	oapi "github.com/openshift/origin/pkg/user/api/v1"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
@@ -159,6 +164,40 @@ func (usr *UserInfo) SendVerifyMail() error {
 	link := httpAddrMaker(DataFoundryEnv.Get(DATAFOUNDRY_API_ADDR)) + "/verify_account/" + verifytoken
 	message := fmt.Sprintf(Message, usr.Username, link)
 	return SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
+}
+
+func (user *UserInfo) InitUserProject(token string) (err error) {
+	project_url := DF_HOST + "/oapi/v1/projectrequests"
+
+	project := new(oapi.ProjectRequest)
+	project.Name = user.Username
+	if reqbody, err := json.Marshal(project); err != nil {
+		glog.Error(err)
+	} else {
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		req, _ := http.NewRequest("POST", project_url, bytes.NewBuffer(reqbody))
+		req.Header.Set("Authorization", token)
+		//log.Println(req.Header, bearer)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			glog.Error(err)
+		} else {
+			glog.Infoln(req.Host, req.Method, req.URL.RequestURI(), req.Proto, resp.StatusCode)
+			b, _ := ioutil.ReadAll(resp.Body)
+			glog.Infoln(string(b))
+			if resp.StatusCode == http.StatusOK {
+				user.Status.Initialized = true
+				err = dbstore.SetValue(etcdProfilePath(user.Username), user, false)
+			}
+		}
+	}
+
+	return
 }
 
 var Subject string = "Welcome to Datafoundry"
