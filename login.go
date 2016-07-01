@@ -117,6 +117,7 @@ func token_proxy(auth string) (token string, status int) {
 			n := proc(m)
 			r, _ := json.Marshal(n)
 			go logingitlab(auth, n)
+			checkIfInitProject(n)
 			return string(r), resp.StatusCode
 		}
 	}
@@ -158,4 +159,35 @@ func init() {
 	glog.Infoln("apiserver", apiserver)
 	glog.Infoln("oauthurl", oauthurl)
 	glog.Infoln("gitlaburl", gitlaburl)
+}
+
+func checkIfInitProject(auth map[string]string) {
+	var token string
+	if len(auth["token_type"]) == 0 || len(auth["access_token"]) == 0 {
+		glog.Infoln(auth, "doesn't contain a complete token")
+	} else {
+		token = auth["token_type"] + " " + auth["access_token"]
+	}
+
+	if username, err := getDFUserame(token); err != nil {
+		glog.Error(err)
+	} else {
+		if profile, err := getProfile(username); err != nil {
+			glog.Error(err)
+		} else {
+			user := new(UserInfo)
+			if err = json.Unmarshal([]byte(profile.(string)), user); err != nil {
+				glog.Error(err)
+			} else {
+				if user.Status.Initialized {
+					return
+				} else {
+					if err = user.InitUserProject(token); err != nil {
+						glog.Error(err)
+						return
+					}
+				}
+			}
+		}
+	}
 }
