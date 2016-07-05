@@ -6,8 +6,13 @@ type UserInfo struct {
 	Aliasname  string     `json:"nickname,omitempty"`
 	Email      string     `json:"email"`
 	CreateTime string     `json:"creation_time"`
-	OrgList    []string   `json:"orgnazitions,omitempty"`
+	OrgList    []OrgBrief `json:"orgnazitions,omitempty"`
 	Status     UserStatus `json:"status,omitempty"`
+}
+type OrgBrief struct {
+	OrgID    string `json:"org_id"`
+	OrgName  string `json:"org_name"`
+	OrgAlias string `json:"org_alias"`
 }
 
 type UserStatus struct {
@@ -15,7 +20,10 @@ type UserStatus struct {
 	Initialized bool            `json:"initialized"`
 	FromLdap    bool            `json:"from_ldap"`
 	Phase       UserStatusPhase `json:"phase"`
+	Quota       UserQuota       `json:"quota"`
 }
+
+type UserQuota struct{}
 
 type UserStatusPhase string
 
@@ -30,26 +38,39 @@ type Password struct {
 }
 
 type Orgnazition struct {
-	ID         string      `json:"id"`
-	Name       string      `json:"name"`
-	CreateBy   string      `json:"create_by"`
-	CreateTime string      `json:"creation_time"`
-	MemberList []OrgMember `json:"members"`
+	ID         string         `json:"id"`
+	Name       string         `json:"name"`
+	CreateBy   string         `json:"create_by"`
+	CreateTime string         `json:"creation_time"`
+	MemberList []OrgMember    `json:"members"`
+	Status     OrgStatusPhase `json:"status"`
+}
+
+type OrgnazitionList struct {
+	Orgnazitions []Orgnazition `json:"orgnazitions"`
 }
 
 type OrgMember struct {
-	MemberName   string          `json:"member_name"`
-	IsAdmin      bool            `json:"privileged"`
-	PrivilegedBy string          `json:"privileged_by"`
-	JoinedAt     string          `json:"joined_at"`
-	Status       OrgMemberStatus `json:"status"`
+	MemberName   string            `json:"member_name"`
+	IsAdmin      bool              `json:"privileged"`
+	PrivilegedBy string            `json:"privileged_by"`
+	JoinedAt     string            `json:"joined_at"`
+	Status       MemberStatusPhase `json:"status"`
 }
 
-type OrgMemberStatus string
+type MemberStatusPhase string
 
 const (
-	OrgMemberStatusInvited OrgMemberStatus = "invited"
-	OrgMemberStatusjoined  OrgMemberStatus = "joined"
+	OrgMemberStatusInvited MemberStatusPhase = "invited"
+	OrgMemberStatusjoined  MemberStatusPhase = "joined"
+)
+
+type OrgStatusPhase string
+
+const (
+	OrgStatusCreated OrgStatusPhase = "created"
+	OrgStatusPending OrgStatusPhase = "creating"
+	OrgStatusError   OrgStatusPhase = "failed"
 )
 
 var ManageActionList = []string{
