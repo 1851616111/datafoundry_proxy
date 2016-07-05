@@ -15,7 +15,7 @@ var (
 
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	http.Error(w, "", http.StatusForbidden)
+	http.Error(w, "", http.StatusNotFound)
 }
 
 func Forbidden(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {

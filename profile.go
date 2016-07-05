@@ -35,7 +35,7 @@ func Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			if usr.Username != username {
 				http.Error(w, "", http.StatusBadRequest)
 			}
-			if err = usr.Update(username); err != nil {
+			if err = usr.Update(); err != nil {
 				http.Error(w, err.Error(), http.StatusBadRequest)
 			} else {
 				http.Error(w, "", http.StatusOK)

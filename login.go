@@ -109,6 +109,7 @@ func token_proxy(auth string) (token string, status int) {
 	//resp, err := client.Do(req)
 	if err != nil {
 		glog.Error(err)
+		return "", http.StatusInternalServerError
 	} else {
 		url, err := resp.Location()
 		if err == nil {
