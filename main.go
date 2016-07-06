@@ -5,6 +5,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
+	
+	"github.com/asiainfoLDP/datafoundry_proxy/messages"
 )
 
 type mux struct{}
@@ -53,7 +55,9 @@ func main() {
 	// router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,
-
+	
+	messages.Init(router)
+	
 	router.NotFound = &mux{}
 
 	log.Fatal(http.ListenAndServe(":9090", router))

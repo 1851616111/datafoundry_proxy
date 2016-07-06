@@ -21,6 +21,15 @@ const (
 
 	DATAFOUNDRY_HOST_ADDR string = "DATAFOUNDRY_HOST_ADDR"
 	DATAFOUNDRY_API_ADDR  string = "DATAFOUNDRY_API_ADDR"
+	
+	ENV_NAME_MYSQL_ADDR     string = "ENV_NAME_MYSQL_ADDR"
+	ENV_NAME_MYSQL_PORT     string = "ENV_NAME_MYSQL_PORT"
+	ENV_NAME_MYSQL_DATABASE string = "ENV_NAME_MYSQL_DATABASE"
+	ENV_NAME_MYSQL_USER     string = "ENV_NAME_MYSQL_USER"
+	ENV_NAME_MYSQL_PASSWORD string = "ENV_NAME_MYSQL_PASSWORD"
+	
+	ENV_NAME_KAFKA_ADDR string = "ENV_NAME_KAFKA_ADDR"
+	ENV_NAME_KAFKA_PORT string = "ENV_NAME_KAFKA_PORT"
 )
 const (
 	ETCDPrefix      string = "datafoundry.io/"
@@ -30,6 +39,21 @@ const (
 )
 
 var (
+	MysqlEnv Env = &EnvOnce{
+		envs: map[string]string{
+			ENV_NAME_MYSQL_ADDR:     "",
+			ENV_NAME_MYSQL_PORT:     "",
+			ENV_NAME_MYSQL_DATABASE: "",
+			ENV_NAME_MYSQL_USER:     "",
+			ENV_NAME_MYSQL_PASSWORD: "",
+		},
+	}
+	KafkaEnv Env = &EnvOnce{
+		envs: map[string]string{
+			ENV_NAME_KAFKA_ADDR: "",
+			ENV_NAME_KAFKA_PORT: "",
+		},
+	}
 	EtcdStorageEnv Env = &EnvOnce{
 		envs: map[string]string{
 			ETCD_HTTP_ADDR: "http://127.0.0.1:2379",
@@ -115,6 +139,14 @@ func init() {
 
 	flag.Parse()
 
+	MysqlEnv.Init()
+	MysqlEnv.Print()
+	MysqlEnv.Validate(envNil)
+
+	KafkaEnv.Init()
+	KafkaEnv.Print()
+	KafkaEnv.Validate(envNil)
+	
 	EtcdStorageEnv.Init()
 	EtcdStorageEnv.Print()
 	//EtcdStorageEnv.Validate(envNil)

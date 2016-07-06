@@ -13,6 +13,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+	
+	"github.com/asiainfoLDP/datafoundry_proxy/messages"
 )
 
 func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -163,7 +165,7 @@ func (usr *UserInfo) SendVerifyMail() error {
 	}
 	link := httpAddrMaker(DataFoundryEnv.Get(DATAFOUNDRY_API_ADDR)) + "/verify_account/" + verifytoken
 	message := fmt.Sprintf(Message, usr.Username, link)
-	return SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
+	return messages.SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
 }
 
 func (user *UserInfo) InitUserProject(token string) (err error) {
