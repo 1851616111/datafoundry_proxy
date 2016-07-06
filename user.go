@@ -97,6 +97,15 @@ func (usr *UserInfo) CheckIfOrgExist(orgName string) bool {
 	return false
 }
 
+func (usr *UserInfo) DeleteOrgFromList(orgID string) *UserInfo {
+	for idx, org := range usr.OrgList {
+		if org.OrgID == orgID {
+			usr.OrgList = append(usr.OrgList[:idx], usr.OrgList[idx+1:]...)
+		}
+	}
+	return usr
+}
+
 func (usr *UserInfo) CheckIfOrgExistByID(id string) bool {
 	for _, org := range usr.OrgList {
 		if org.OrgID == id {
@@ -114,8 +123,107 @@ func (user *UserInfo) ListOrgs() (*OrgnazitionList, error) {
 		if orgnazition, err := org.Get(); err == nil {
 			orgList.Orgnazitions = append(orgList.Orgnazitions, *orgnazition)
 		}
+
 	}
 	return orgList, nil
+}
+
+func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (err error) {
+	org := new(Orgnazition)
+	org.ID = orgID
+	if org, err = org.Get(); err == nil {
+		if !org.IsAdmin(user.Username) {
+			return errors.New("permission denied.")
+		}
+		if org.IsMemberExist(member) {
+			return errors.New("user is already in the orgnazition.")
+		}
+		minfo := new(UserInfo)
+		minfo.Username = member.MemberName
+		if ok, err := minfo.IfExist(); !ok {
+			if err != nil {
+				return err
+			}
+			return errors.New("user not registered yet.")
+		}
+		if member.IsAdmin {
+			member.PrivilegedBy = user.Username
+		}
+		member.Status = OrgMemberStatusInvited
+		org.MemberList = append(org.MemberList, *member)
+	}
+	if err = dbstore.SetValue(etcdOrgPath(org.ID), org, false); err != nil {
+		glog.Error(err)
+	}
+	return
+}
+
+func (user *UserInfo) OrgRemove(member *OrgMember, orgID string) (err error) {
+	if user.Username == member.MemberName {
+		return errors.New("can't remove yourself.")
+	}
+	org := new(Orgnazition)
+	org.ID = orgID
+	if org, err = org.Get(); err == nil {
+		if !org.IsAdmin(user.Username) {
+			return errors.New("permission denied.")
+		}
+		if !org.IsMemberExist(member) {
+			return errors.New("no such user in the orgnazition.")
+		}
+		org = org.RemoveMember(member)
+		if _, err = org.Update(); err != nil {
+			glog.Error(err)
+			return err
+		} else {
+			minfo := new(UserInfo)
+			minfo.Username = member.MemberName
+			if minfo, err = minfo.Get(); err != nil {
+				glog.Error(err)
+				return
+			} else {
+				minfo = minfo.DeleteOrgFromList(orgID)
+				return minfo.Update()
+			}
+		}
+	}
+
+	return
+}
+func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (err error) {
+	if user.Username == member.MemberName {
+		return errors.New("can't privilege yourself.")
+	}
+	org := new(Orgnazition)
+	org.ID = orgID
+	if org, err = org.Get(); err == nil {
+		if !org.IsAdmin(user.Username) {
+			return errors.New("permission denied.")
+		}
+
+		if !org.IsMemberExist(member) {
+			return errors.New("can't find such username in this orgnazition.")
+		}
+
+		for idx, oldMember := range org.MemberList {
+			if oldMember.MemberName == member.MemberName {
+				org.MemberList[idx].IsAdmin = member.IsAdmin
+				if member.IsAdmin {
+					org.MemberList[idx].PrivilegedBy = user.Username
+				} else {
+					org.MemberList[idx].PrivilegedBy = ""
+				}
+				if org, err = org.Update(); err == nil {
+					return
+				} else {
+					glog.Error(err)
+					return
+				}
+			}
+		}
+		return errors.New("no such user.")
+	}
+	return
 }
 
 func (usr *UserInfo) Update() error {

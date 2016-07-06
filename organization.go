@@ -8,6 +8,20 @@ import (
 	"time"
 )
 
+func DeleteOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
+	http.Error(w, "delete not implentmented.", http.StatusNotImplemented)
+}
+
+func JoinOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
+	http.Error(w, "join not implentmented.", http.StatusNotImplemented)
+}
+func LeaveOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
+	http.Error(w, "leave not implentmented.", http.StatusNotImplemented)
+}
+
 func ListOrganizations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
 
@@ -118,38 +132,59 @@ func GetOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	// var username string
-	// var err error
+	var username string
+	var err error
 
-	// if username, err = authedIdentities(r); err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
+	if username, err = authedIdentities(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user := &UserInfo{Username: username}
+	if user, err = user.Get(); err != nil {
+		glog.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	action := ps.ByName("action")
+	orgID := ps.ByName("org")
+
+	glog.Infof("action: %s,orgID: %s", action, orgID)
+
+	if !user.CheckIfOrgExistByID(orgID) {
+		http.Error(w, "no such organization", http.StatusNotFound)
+		return
+	}
+
+	member := new(OrgMember)
+	if err := parseRequestBody(r, member); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	switch action {
-	case "accept":
-		http.Error(w, "accept not implentmented.", http.StatusNotImplemented)
-	case "leave":
 
-		http.Error(w, "leave not implentmented.", http.StatusNotImplemented)
 	case "remove":
-		fallthrough
+		err = user.OrgRemove(member, orgID)
 	case "invite":
-		fallthrough
+		err = user.OrgInvite(member, orgID)
 	case "privileged":
-		member := new(OrgMember)
-		if err := parseRequestBody(r, member); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		resp, _ := json.Marshal(member)
-		http.Error(w, string(resp), http.StatusOK)
+		err = user.OrgPrivilege(member, orgID)
 	default:
 		http.Error(w, "not supported action", http.StatusBadRequest)
+		return
 	}
-	return
+
+	if err != nil {
+		glog.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	} else {
+		http.Error(w, "", http.StatusOK)
+		return
+
+	}
 
 }
 
@@ -165,6 +200,41 @@ func (o *Orgnazition) Get() (org *Orgnazition, err error) {
 	}
 	return org, nil
 
+}
+
+func (o *Orgnazition) Update() (org *Orgnazition, err error) {
+	if err = dbstore.SetValue(etcdOrgPath(o.ID), o, false); err != nil {
+		glog.Error(err)
+		return nil, err
+	}
+	return o, nil
+}
+
+func (o *Orgnazition) IsAdmin(username string) bool {
+	for _, member := range o.MemberList {
+		if member.MemberName == username && member.IsAdmin {
+			return true
+		}
+	}
+	return false
+}
+
+func (o *Orgnazition) IsMemberExist(member *OrgMember) bool {
+	for _, v := range o.MemberList {
+		if v.MemberName == member.MemberName {
+			return true
+		}
+	}
+	return false
+}
+
+func (o *Orgnazition) RemoveMember(member *OrgMember) *Orgnazition {
+	for idx, v := range o.MemberList {
+		if v.MemberName == member.MemberName {
+			o.MemberList = append(o.MemberList[:idx], o.MemberList[idx+1:]...)
+		}
+	}
+	return o
 }
 
 func (o *Orgnazition) AddMemeber(member *OrgMember) *Orgnazition { return nil }

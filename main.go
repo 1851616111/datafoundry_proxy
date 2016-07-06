@@ -46,10 +46,12 @@ func main() {
 	router.GET("/lapi/orgs", ListOrganizations)
 	router.POST("/lapi/orgs", CreateOrganization)
 	router.GET("/lapi/orgs/:org", GetOrganization)
+	router.DELETE("/lapi/orgs/:org", DeleteOrganization)
 	router.PUT("/lapi/orgs/:org/:action", ManageOrganization)
-	// router.POST("/lapi/orgs/:org/invite", InviteOrganization)
-	// router.PUT("/lapi/orgs/:org/accept", AcceptOrganization)
+	// router.PUT("/lapi/orgs/:org/accept", JoinOrganization)
 	// router.PUT("/lapi/orgs/:org/leave", LeaveOrganization)
+
+	// router.PUT("/lapi/orgs/:org/invite", ManageOrganization)
 	// router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,
