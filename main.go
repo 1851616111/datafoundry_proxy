@@ -50,7 +50,6 @@ func main() {
 	router.PUT("/lapi/orgs/:org/:action", ManageOrganization)
 	// router.PUT("/lapi/orgs/:org/accept", JoinOrganization)
 	// router.PUT("/lapi/orgs/:org/leave", LeaveOrganization)
-
 	// router.PUT("/lapi/orgs/:org/invite", ManageOrganization)
 	// router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
