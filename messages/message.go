@@ -312,6 +312,8 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		}
 	}
 	
+	JsonResult(w, http.StatusNotImplemented, GetError(ErrorCodeUrlNotSupported), nil)
+	return
 	/*
 	bt := r.Form.Get("beforetime")
 	at := r.Form.Get("aftertime")
@@ -420,6 +422,7 @@ func ClearNotificationStats(w http.ResponseWriter, r *http.Request, params httpr
 	}
 	
 	_ = currentUserName
+	JsonResult(w, http.StatusNotImplemented, GetError(ErrorCodeUrlNotSupported), nil)
 
 	//err := notification.UpdateUserMessageStats(db, currentUserName, "", 0) // clear
 	//if err != nil {
@@ -427,7 +430,7 @@ func ClearNotificationStats(w http.ResponseWriter, r *http.Request, params httpr
 	//	return
 	//}
 
-	JsonResult(w, http.StatusOK, nil, nil)
+	//JsonResult(w, http.StatusOK, nil, nil)
 }
 
 //==================================================================

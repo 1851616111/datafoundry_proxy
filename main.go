@@ -17,7 +17,7 @@ var (
 
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	http.Error(w, "", http.StatusForbidden)
+	http.Error(w, "", http.StatusNotFound)
 }
 
 func Forbidden(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
@@ -48,10 +48,11 @@ func main() {
 	router.GET("/lapi/orgs", ListOrganizations)
 	router.POST("/lapi/orgs", CreateOrganization)
 	router.GET("/lapi/orgs/:org", GetOrganization)
+	router.DELETE("/lapi/orgs/:org", DeleteOrganization)
 	router.PUT("/lapi/orgs/:org/:action", ManageOrganization)
-	// router.POST("/lapi/orgs/:org/invite", InviteOrganization)
-	// router.PUT("/lapi/orgs/:org/accept", AcceptOrganization)
+	// router.PUT("/lapi/orgs/:org/accept", JoinOrganization)
 	// router.PUT("/lapi/orgs/:org/leave", LeaveOrganization)
+	// router.PUT("/lapi/orgs/:org/invite", ManageOrganization)
 	// router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,

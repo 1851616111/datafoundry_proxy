@@ -2,16 +2,18 @@ package main
 
 import (
 	"crypto/md5"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/go-ldap/ldap"
 	"github.com/golang/glog"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var ErrNotFound = errors.New("request resouce not found")
@@ -103,6 +105,10 @@ func etcdProfilePath(username string) string {
 	return fmt.Sprintf(ETCDUserProfile, username)
 }
 
+func etcdOrgPath(orgid string) string {
+	return fmt.Sprintf(ETCDOrgsPrefix, orgid)
+}
+
 func etcdGeneratePath(path, key string) string {
 	return fmt.Sprintf(path, key)
 }
@@ -123,4 +129,29 @@ func genRandomToken() (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%x", b), nil
+}
+
+func generatedOrgName(strlen int) (name string) {
+	rand.Seed(time.Now().UTC().UnixNano())
+	const chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+	result := make([]byte, strlen)
+	for i := 0; i < strlen; i++ {
+		result[i] = chars[rand.Intn(len(chars))]
+	}
+	return string(result)
+}
+
+var Subject string = "Welcome to Datafoundry"
+var Message string = `Hello %s, <br />please click <a href="%s">link</a> to verify your account, the activation link will be expire after 24 hours.`
+
+func checkIfExistldap(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	if e, ok := err.(*ldap.Error); ok && e.ResultCode == ldap.LDAPResultEntryAlreadyExists {
+		return true
+	}
+
+	return false
 }

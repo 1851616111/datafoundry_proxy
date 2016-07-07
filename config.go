@@ -43,6 +43,8 @@ const (
 	ETCDUserPrefix  string = ETCDPrefix + "users/"
 	ETCDUserProfile string = ETCDUserPrefix + "%s/profile"
 	ETCDUserVerify  string = ETCDPrefix + "verify/%s"
+
+	ETCDOrgsPrefix string = ETCDPrefix + "organizations/%s"
 )
 
 var (

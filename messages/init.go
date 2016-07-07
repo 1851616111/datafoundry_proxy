@@ -44,7 +44,7 @@ func Init(router *httprouter.Router, _mysqlEnv, _kafkaEnv, _emailEnv env.Env) bo
 }
 
 func initRouter(router *httprouter.Router) {
-	router.POST("/lapi/notifications", CreateMessage)
+	//router.POST("/lapi/notifications", CreateMessage)
 	router.GET("/lapi/notifications", GetMyMessages)
 	//router.PUT("/notification/:messageid/:action", ModifyMessage)
 	router.GET("/lapi/notification_stat", GetNotificationStats)
