@@ -26,7 +26,19 @@ func GetMessages(w http.ResponseWriter, r *http.Request, params httprouter.Param
 }
 
 func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	http.Error(w, "to do", http.StatusNotImplemented)
+	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
+
+	var username string
+	var err error
+
+	if username, err = authedIdentities(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	
+	r.Header.Set("User", username)
+	
+	messages.ModifyMessage(w, r, params)
 }
 
 //===============================================================

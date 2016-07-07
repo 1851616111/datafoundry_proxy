@@ -422,7 +422,7 @@ func getUserMessages(db *sql.DB, username string, tableName string, messagetype 
 		//}
 	}
 	
-	
+	/*
 	go func(){
 		num := len(messages)
 		for i := 0; i < num; i++ {
@@ -433,6 +433,7 @@ func getUserMessages(db *sql.DB, username string, tableName string, messagetype 
 			//}
 		}
 	}()
+	*/
 	
 	return count, messages, nil
 }

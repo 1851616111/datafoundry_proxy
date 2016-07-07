@@ -226,7 +226,6 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	JsonResult(w, http.StatusOK, nil, nil)
 }
 
-/*
 func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	db := getDB()
 	if db == nil {
@@ -240,27 +239,49 @@ func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		return
 	}
 
-	messageid, e := mustIntParamInPath(params, "messageid")
-	if e != nil {
-		JsonResult(w, http.StatusBadRequest, e, nil)
-		return
-	}
-
-	action, e := mustStringParamInPath(params, "action", StringParamType_UrlWord)
-	if e != nil {
-		JsonResult(w, http.StatusBadRequest, e, nil)
-		return
-	}
-
-	err := notification.ModifyUserMessage(db, currentUserName, messageid, action)
+	m, err := common.ParseRequestJsonAsMap(r)
 	if err != nil {
-		JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+		JsonResult(w, http.StatusBadRequest, GetError2(ErrorCodeInvalidParameters, err.Error()), nil)
 		return
+	}
+	
+	forclient := false
+	if m["forclient"] != "" {
+		forclient, e = mustBoolParamInMap(m, "forclient")
+		if e != nil {
+			JsonResult(w, http.StatusBadRequest, e, nil)
+			return
+		}
+	}
+
+	messageid, e := mustIntParamInMap (m, "messageid")
+	if e != nil {
+		JsonResult(w, http.StatusBadRequest, e, nil)
+		return
+	}
+
+	action, e := mustStringParamInMap (m, "action", StringParamType_UrlWord)
+	if e != nil {
+		JsonResult(w, http.StatusBadRequest, e, nil)
+		return
+	}
+
+	if forclient {
+		err := notification.ModifyUserMessageForClient(db, currentUserName, messageid, action)
+		if err != nil {
+			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+			return
+		}
+	} else {
+		err := notification.ModifyUserMessageForBrowser(db, currentUserName, messageid, action)
+		if err != nil {
+			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+			return
+		}
 	}
 
 	JsonResult(w, http.StatusOK, nil, nil)
 }
-*/
 
 func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	db := getDB()
@@ -331,8 +352,6 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		}
 	}
 	
-	JsonResult(w, http.StatusNotImplemented, GetError(ErrorCodeUrlNotSupported), nil)
-	return
 	/*
 	bt := r.Form.Get("beforetime")
 	at := r.Form.Get("aftertime")

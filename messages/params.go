@@ -42,6 +42,20 @@ func mustBoolParam(params httprouter.Params, paramName string) (bool, *Error) {
 	return b, nil
 }
 
+func mustBoolParamInMap(m map[string]interface{}, paramName string) (bool, *Error) {
+	v, ok := m [paramName]
+	if ok {
+		b, ok := v.(bool)
+		if ok {
+			return b, nil
+		}
+		
+		return false, newInvalidParameterError(fmt.Sprintf("param %s is not bool", paramName))
+	}
+	
+	return false, newInvalidParameterError(fmt.Sprintf("param %s is not found", paramName))
+}
+
 func mustBoolParamInQuery(r *http.Request, paramName string) (bool, *Error) {
 	bool_str := r.Form.Get(paramName)
 	if bool_str == "" {
