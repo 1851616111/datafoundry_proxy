@@ -7,7 +7,7 @@ import (
 	"github.com/jordan-wright/email"
 	"net/mail"
 	"net/smtp"
-	"os"
+	//"os"
 	"strconv"
 	"strings"
 )
@@ -19,27 +19,32 @@ var EmailServerHost = ""
 var EmailServerPort = 0
 
 func initMail() {
-	name := os.Getenv("ADMIN_EMAIL_USERNAME")
+	//name := os.Getenv("ADMIN_EMAIL_USERNAME")
+	name := emailEnv.Get("ADMIN_EMAIL_USERNAME")
 	if name != "" {
 		AdminName = name
 	}
 
-	email := os.Getenv("ADMIN_EMAIL")
+	//email := os.Getenv("ADMIN_EMAIL")
+	email := emailEnv.Get("ADMIN_EMAIL")
 	if email != "" {
 		AdminEmailUser = email
 	}
 
-	pass := os.Getenv("ADMIN_EMAIL_PASSWORD")
+	//pass := os.Getenv("ADMIN_EMAIL_PASSWORD")
+	pass := emailEnv.Get("ADMIN_EMAIL_PASSWORD")
 	if pass != "" {
 		AdminEmailPass = pass
 	}
 
-	host := os.Getenv("EMAIL_SERVER_HOST")
+	//host := os.Getenv("EMAIL_SERVER_HOST")
+	host := emailEnv.Get("EMAIL_SERVER_HOST")
 	if host != "" {
 		EmailServerHost = host
 	}
 
-	port_str := os.Getenv("EMAIL_SERVER_PORT")
+	//port_str := os.Getenv("EMAIL_SERVER_PORT")
+	port_str := emailEnv.Get("EMAIL_SERVER_PORT")
 	if port_str != "" {
 		port, err := strconv.ParseInt(port_str, 10, 64)
 		if err != nil {

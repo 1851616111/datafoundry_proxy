@@ -56,7 +56,7 @@ func main() {
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,
 	
-	messages.Init(router)
+	messages.Init(router, MysqlEnv, KafkaEnv, EmailEnv)
 	
 	router.NotFound = &mux{}
 

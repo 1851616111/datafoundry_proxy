@@ -3,7 +3,7 @@ package messages
 import (
 	"database/sql"
 	"fmt"
-	"os"
+	//"os"
 	"time"
 	"net"
 
@@ -13,6 +13,8 @@ import (
 
 	"github.com/asiainfoLDP/datahub_commons/log"
 	"github.com/asiainfoLDP/datahub_commons/mq"
+	
+	"github.com/asiainfoLDP/datafoundry_proxy/env"
 	
 	"github.com/asiainfoLDP/datafoundry_proxy/messages/notification"
 )
@@ -25,7 +27,11 @@ var Port int
 var Debug = false
 var Logger = log.DefaultlLogger()
 
-func Init(router *httprouter.Router) bool {
+var mysqlEnv, kafkaEnv, emailEnv env.Env
+
+func Init(router *httprouter.Router, _mysqlEnv, _kafkaEnv, _emailEnv env.Env) bool {
+	
+	mysqlEnv, kafkaEnv, emailEnv = _mysqlEnv, _kafkaEnv, _emailEnv
 	
 	if initDB() == false {return false}
 
@@ -50,13 +56,17 @@ func initRouter(router *httprouter.Router) {
 //=============================
 
 func MysqlAddrPort() (string, string) {
-	return os.Getenv(os.Getenv("ENV_NAME_MYSQL_ADDR")), os.Getenv(os.Getenv("ENV_NAME_MYSQL_PORT"))
+	//return os.Getenv(os.Getenv("ENV_NAME_MYSQL_ADDR")), os.Getenv(os.Getenv("ENV_NAME_MYSQL_PORT"))
+	return mysqlEnv.Get("ENV_NAME_MYSQL_ADDR"), mysqlEnv.Get("ENV_NAME_MYSQL_PORT")
 }
 
 func MysqlDatabaseUsernamePassword() (string, string, string) {
-	return os.Getenv(os.Getenv("ENV_NAME_MYSQL_DATABASE")), 
-		os.Getenv(os.Getenv("ENV_NAME_MYSQL_USER")), 
-		os.Getenv(os.Getenv("ENV_NAME_MYSQL_PASSWORD"))
+	//return os.Getenv(os.Getenv("ENV_NAME_MYSQL_DATABASE")), 
+	//	os.Getenv(os.Getenv("ENV_NAME_MYSQL_USER")), 
+	//	os.Getenv(os.Getenv("ENV_NAME_MYSQL_PASSWORD"))
+	return mysqlEnv.Get("ENV_NAME_MYSQL_DATABASE"), 
+		mysqlEnv.Get("ENV_NAME_MYSQL_USER"), 
+		mysqlEnv.Get("ENV_NAME_MYSQL_PASSWORD")
 }
 
 type Ds struct {
@@ -133,7 +143,9 @@ func connectDB() {
 }
 
 func upgradeDB() {
-	err := notification.TryToUpgradeDatabase(ds.db, "datahub:subs_txns", os.Getenv("MYSQL_CONFIG_DONT_UPGRADE_TABLES") != "yes") // don't change the name
+	//needUpgradeTables := os.Getenv("DONT_UPGRADE_MYSQL_TABLES") != "yes"
+	needUpgradeTables := mysqlEnv.Get("DONT_UPGRADE_MYSQL_TABLES") != "yes"
+	err := notification.TryToUpgradeDatabase(ds.db, "datahub:subs_txns", needUpgradeTables) // don't change the name
 	if err != nil {
 		Logger.Errorf("TryToUpgradeDatabase error: %s", err.Error())
 	}
@@ -204,7 +216,8 @@ var (
 )
 
 func KafkaAddrPort() (string, string) {
-	return os.Getenv(os.Getenv("ENV_NAME_KAFKA_ADDR")), os.Getenv(os.Getenv("ENV_NAME_KAFKA_PORT"))
+	//return os.Getenv(os.Getenv("ENV_NAME_KAFKA_ADDR")), os.Getenv(os.Getenv("ENV_NAME_KAFKA_PORT"))
+	return kafkaEnv.Get("ENV_NAME_KAFKA_ADDR"), kafkaEnv.Get("ENV_NAME_KAFKA_PORT")
 }
 
 func initMQ() {
