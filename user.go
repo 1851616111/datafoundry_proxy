@@ -190,23 +190,26 @@ func (user *UserInfo) OrgJoin(orgID string) (err error) {
 	return
 }
 
-func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (err error) {
-	org := new(Orgnazition)
+func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnazition, err error) {
+	org = new(Orgnazition)
 	org.ID = orgID
+	var ok bool
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			return errors.New("permission denied.")
+			err = errors.New("permission denied.")
+			return
 		}
 		if org.IsMemberExist(member) {
-			return errors.New("user is already in the orgnazition.")
+			err = errors.New("user is already in the orgnazition.")
+			return
 		}
 		minfo := new(UserInfo)
 		minfo.Username = member.MemberName
-		if ok, err := minfo.IfExist(); !ok {
-			if err != nil {
-				return err
+		if ok, err = minfo.IfExist(); !ok {
+			if err == nil {
+				err = errors.New("user not registered yet.")
 			}
-			return errors.New("user not registered yet.")
+			return
 		}
 		if member.IsAdmin {
 			member.PrivilegedBy = user.Username

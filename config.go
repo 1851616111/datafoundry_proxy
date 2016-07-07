@@ -57,13 +57,13 @@ var (
 			ENV_NAME_MYSQL_PASSWORD:   "",
 		},
 	}}
-	KafkaEnv = &EnvOnce2{EnvOnce: EnvOnce{
-		envs: map[string]string{
-			ENV_NAME_KAFKA_ADDR: "",
-			ENV_NAME_KAFKA_PORT: "",
-		},
-	}}
-	EmailEnv = &EnvOnce2{EnvOnce: EnvOnce{
+	//KafkaEnv = &EnvOnce2{EnvOnce: EnvOnce{
+	//	envs: map[string]string{
+	//		ENV_NAME_KAFKA_ADDR: "",
+	//		ENV_NAME_KAFKA_PORT: "",
+	//	},
+	//}}
+	EmailEnv = &EnvOnce{
 		envs: map[string]string{
 			ADMIN_EMAIL_USERNAME: "",
 			ADMIN_EMAIL:          "",
@@ -71,7 +71,7 @@ var (
 			EMAIL_SERVER_HOST:    "",
 			EMAIL_SERVER_PORT:    "",
 		},
-	}}
+	}
 	
 	EtcdStorageEnv = &EnvOnce{
 		envs: map[string]string{
@@ -173,9 +173,9 @@ func init() {
 	MysqlEnv.Validate(envNil)
 	MysqlEnv.Set(DONT_UPGRADE_MYSQL_TABLES, os.Getenv(DONT_UPGRADE_MYSQL_TABLES))
 
-	KafkaEnv.Init()
-	KafkaEnv.Print()
-	KafkaEnv.Validate(envNil)
+	//KafkaEnv.Init()
+	//KafkaEnv.Print()
+	//KafkaEnv.Validate(envNil)
 	
 	EmailEnv.Init()
 	EmailEnv.Print()

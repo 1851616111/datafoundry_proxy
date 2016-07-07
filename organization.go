@@ -239,8 +239,12 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 		err = user.OrgRemoveMember(member, orgID)
 	case "invite":
-
-		err = user.OrgInvite(member, orgID)
+		
+		var org *Orgnazition
+		org, err = user.OrgInvite(member, orgID)
+		if err == nil {
+			go SendOrgInviteMessage(member.MemberName, username, orgID, org.Name)
+		}
 	case "privileged":
 
 		err = user.OrgPrivilege(member, orgID)

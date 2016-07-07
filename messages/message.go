@@ -92,6 +92,21 @@ func sendAdminBroadcastMessage(currentUserName string, level int, message_data s
 // 
 //==================================================================
 
+const (
+	Message_SiteNotify = "sitenotify"
+	Message_AccoutMsg  = "accoutmsg"
+	Message_Alert      = "alert"
+)
+
+func CreateInboxMessage(messageType, receiver, sender string, jsonData string) (int64, error) {
+	db := getDB()
+	if db == nil {
+		return 0, errors.New("db not inited")
+	}
+	
+	return notification.CreateMessageForBrowser(db, messageType, receiver, sender, notification.Level_General, jsonData)
+}
+
 func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	db := getDB()
 	if db == nil {
@@ -141,6 +156,10 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 			return
 		}
 		
+		
+		
+		JsonResult(w, http.StatusNotImplemented, GetError(ErrorCodeUrlNotSupported), nil)
+		return
 		/*
 		user, err := GetUserInfo(getUserService(), r.Header.Get("Authorization"), r.Header.Get("User"), currentUserName)
 		if err != nil {

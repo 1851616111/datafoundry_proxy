@@ -239,6 +239,9 @@ const (
 //
 //=============================================================
 
+func CreateMessage(db *sql.DB, messageType, receiver, sender string, level int, jsonData string) (int64, error) {
+	return createMessage(db, MessageTableName_ForBrowser, messageType, receiver, sender, level, jsonData)
+}
 func CreateMessageForBrowser(db *sql.DB, messageType, receiver, sender string, level int, jsonData string) (int64, error) {
 	return createMessage(db, MessageTableName_ForBrowser, messageType, receiver, sender, level, jsonData)
 }

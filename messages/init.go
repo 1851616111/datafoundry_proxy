@@ -7,7 +7,7 @@ import (
 	"time"
 	"net"
 
-	"github.com/julienschmidt/httprouter"
+	//"github.com/julienschmidt/httprouter"
 
 	_ "github.com/go-sql-driver/mysql"
 
@@ -29,20 +29,21 @@ var Logger = log.DefaultlLogger()
 
 var mysqlEnv, kafkaEnv, emailEnv env.Env
 
-func Init(router *httprouter.Router, _mysqlEnv, _kafkaEnv, _emailEnv env.Env) bool {
+func Init(/*router *httprouter.Router, */_mysqlEnv, _kafkaEnv, _emailEnv env.Env) bool {
 	
 	mysqlEnv, kafkaEnv, emailEnv = _mysqlEnv, _kafkaEnv, _emailEnv
 	
 	if initDB() == false {return false}
 
-	initRouter(router)
+	//initRouter(router)
 	//initGateWay()
-	initMQ()
+	//initMQ()
 	initMail()
 
 	return true
 }
 
+/*
 func initRouter(router *httprouter.Router) {
 	//router.POST("/lapi/notifications", CreateMessage)
 	router.GET("/lapi/notifications", GetMyMessages)
@@ -50,6 +51,7 @@ func initRouter(router *httprouter.Router) {
 	router.GET("/lapi/notification_stat", GetNotificationStats)
 	//router.DELETE("/lapi/notification_stat", ClearNotificationStats)
 }
+*/
 
 //=============================
 //
@@ -145,7 +147,7 @@ func connectDB() {
 func upgradeDB() {
 	//needUpgradeTables := os.Getenv("DONT_UPGRADE_MYSQL_TABLES") != "yes"
 	needUpgradeTables := mysqlEnv.Get("DONT_UPGRADE_MYSQL_TABLES") != "yes"
-	err := notification.TryToUpgradeDatabase(ds.db, "datahub:subs_txns", needUpgradeTables) // don't change the name
+	err := notification.TryToUpgradeDatabase(ds.db, "datafoundry:messages", needUpgradeTables) // don't change the name
 	if err != nil {
 		Logger.Errorf("TryToUpgradeDatabase error: %s", err.Error())
 	}
