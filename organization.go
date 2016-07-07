@@ -299,7 +299,7 @@ func (o *Orgnazition) IsLastAdmin(username string) bool {
 		if member.MemberName == username && member.IsAdmin {
 			isAdmin = true
 		}
-		if member.IsAdmin {
+		if member.IsAdmin && member.Status == OrgMemberStatusjoined {
 			adminCnt += 1
 		}
 	}
