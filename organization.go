@@ -13,13 +13,75 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	http.Error(w, "delete not implentmented.", http.StatusNotImplemented)
 }
 
-func JoinOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	http.Error(w, "join not implentmented.", http.StatusNotImplemented)
+	var username string
+	var err error
+
+	if username, err = authedIdentities(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user := &UserInfo{Username: username}
+	if user, err = user.Get(); err != nil {
+		glog.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	action := ps.ByName("action")
+	orgID := ps.ByName("org")
+
+	glog.Infof("action: %s,orgID: %s", action, orgID)
+
+	err = user.OrgJoin(orgID)
+
+	if err != nil {
+		glog.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	} else {
+		http.Error(w, "", http.StatusOK)
+	}
 }
-func LeaveOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	http.Error(w, "leave not implentmented.", http.StatusNotImplemented)
+	var username string
+	var err error
+
+	if username, err = authedIdentities(r); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user := &UserInfo{Username: username}
+	if user, err = user.Get(); err != nil {
+		glog.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	action := ps.ByName("action")
+	orgID := ps.ByName("org")
+
+	glog.Infof("action: %s,orgID: %s", action, orgID)
+
+	if !user.CheckIfOrgExistByID(orgID) {
+		http.Error(w, "no such organization", http.StatusNotFound)
+		return
+	}
+
+	err = user.OrgLeave(orgID)
+
+	if err != nil {
+		glog.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	} else {
+		http.Error(w, "", http.StatusOK)
+	}
+
+	return
 }
 
 func ListOrganizations(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -152,6 +214,15 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 	glog.Infof("action: %s,orgID: %s", action, orgID)
 
+	switch action {
+	case "accept":
+		JoinOrganization(w, r, ps)
+		return
+	case "leave":
+		LeaveOrganization(w, r, ps)
+		return
+	}
+
 	if !user.CheckIfOrgExistByID(orgID) {
 		http.Error(w, "no such organization", http.StatusNotFound)
 		return
@@ -164,12 +235,14 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	switch action {
-
 	case "remove":
-		err = user.OrgRemove(member, orgID)
+
+		err = user.OrgRemoveMember(member, orgID)
 	case "invite":
+
 		err = user.OrgInvite(member, orgID)
 	case "privileged":
+
 		err = user.OrgPrivilege(member, orgID)
 	default:
 		http.Error(w, "not supported action", http.StatusBadRequest)
@@ -219,6 +292,20 @@ func (o *Orgnazition) IsAdmin(username string) bool {
 	return false
 }
 
+func (o *Orgnazition) IsLastAdmin(username string) bool {
+	adminCnt := 0
+	isAdmin := false
+	for _, member := range o.MemberList {
+		if member.MemberName == username && member.IsAdmin {
+			isAdmin = true
+		}
+		if member.IsAdmin {
+			adminCnt += 1
+		}
+	}
+	return isAdmin && (adminCnt == 1)
+}
+
 func (o *Orgnazition) IsMemberExist(member *OrgMember) bool {
 	for _, v := range o.MemberList {
 		if v.MemberName == member.MemberName {
@@ -228,10 +315,20 @@ func (o *Orgnazition) IsMemberExist(member *OrgMember) bool {
 	return false
 }
 
-func (o *Orgnazition) RemoveMember(member *OrgMember) *Orgnazition {
+func (o *Orgnazition) RemoveMember(member string) *Orgnazition {
 	for idx, v := range o.MemberList {
-		if v.MemberName == member.MemberName {
+		if v.MemberName == member {
 			o.MemberList = append(o.MemberList[:idx], o.MemberList[idx+1:]...)
+		}
+	}
+	return o
+}
+
+func (o *Orgnazition) MemberJoined(member string) *Orgnazition {
+	for idx, v := range o.MemberList {
+		if v.MemberName == member {
+			o.MemberList[idx].Status = OrgMemberStatusjoined
+			o.MemberList[idx].JoinedAt = time.Now().Format(time.RFC3339)
 		}
 	}
 	return o

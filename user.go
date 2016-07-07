@@ -106,6 +106,16 @@ func (usr *UserInfo) DeleteOrgFromList(orgID string) *UserInfo {
 	return usr
 }
 
+func (usr *UserInfo) AddOrgToList(org *Orgnazition) *UserInfo {
+	orgbrief := new(OrgBrief)
+	orgbrief.OrgID = org.ID
+	orgbrief.OrgName = org.Name
+
+	usr.OrgList = append(usr.OrgList, *orgbrief)
+
+	return usr
+}
+
 func (usr *UserInfo) CheckIfOrgExistByID(id string) bool {
 	for _, org := range usr.OrgList {
 		if org.OrgID == id {
@@ -126,6 +136,57 @@ func (user *UserInfo) ListOrgs() (*OrgnazitionList, error) {
 
 	}
 	return orgList, nil
+}
+
+func (user *UserInfo) OrgLeave(orgID string) (err error) {
+	org := new(Orgnazition)
+	org.ID = orgID
+	if org, err = org.Get(); err == nil {
+		if org.IsLastAdmin(user.Username) {
+			return errors.New("orgnazition needs at least one admin.")
+		}
+		org = org.RemoveMember(user.Username)
+		if _, err = org.Update(); err != nil {
+			glog.Error(err)
+			return err
+		} else {
+			if user, err = user.Get(); err != nil {
+				glog.Error(err)
+				return
+			} else {
+				user = user.DeleteOrgFromList(orgID)
+				return user.Update()
+			}
+		}
+
+	}
+
+	return
+}
+func (user *UserInfo) OrgJoin(orgID string) (err error) {
+	org := new(Orgnazition)
+	org.ID = orgID
+	if org, err = org.Get(); err == nil {
+		if org.IsLastAdmin(user.Username) {
+			return errors.New("orgnazition needs at least one admin.")
+		}
+		org = org.MemberJoined(user.Username)
+		if _, err = org.Update(); err != nil {
+			glog.Error(err)
+			return err
+		} else {
+			if user, err = user.Get(); err != nil {
+				glog.Error(err)
+				return
+			} else {
+				user = user.AddOrgToList(org)
+				return user.Update()
+			}
+		}
+
+	}
+
+	return
 }
 
 func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (err error) {
@@ -158,7 +219,7 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (err error) {
 	return
 }
 
-func (user *UserInfo) OrgRemove(member *OrgMember, orgID string) (err error) {
+func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (err error) {
 	if user.Username == member.MemberName {
 		return errors.New("can't remove yourself.")
 	}
@@ -171,7 +232,7 @@ func (user *UserInfo) OrgRemove(member *OrgMember, orgID string) (err error) {
 		if !org.IsMemberExist(member) {
 			return errors.New("no such user in the orgnazition.")
 		}
-		org = org.RemoveMember(member)
+		org = org.RemoveMember(member.MemberName)
 		if _, err = org.Update(); err != nil {
 			glog.Error(err)
 			return err
@@ -208,11 +269,14 @@ func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (err error) 
 		for idx, oldMember := range org.MemberList {
 			if oldMember.MemberName == member.MemberName {
 				org.MemberList[idx].IsAdmin = member.IsAdmin
-				if member.IsAdmin {
-					org.MemberList[idx].PrivilegedBy = user.Username
-				} else {
-					org.MemberList[idx].PrivilegedBy = ""
-				}
+				org.MemberList[idx].PrivilegedBy = user.Username
+				/*
+					if member.IsAdmin {
+						org.MemberList[idx].PrivilegedBy = user.Username
+					} else {
+						org.MemberList[idx].PrivilegedBy = ""
+					}
+				*/
 				if org, err = org.Update(); err == nil {
 					return
 				} else {
