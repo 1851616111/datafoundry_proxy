@@ -165,6 +165,7 @@ func (user *UserInfo) OrgLeave(orgID string) (err error) {
 
 	return
 }
+
 func (user *UserInfo) OrgJoin(orgID string) (err error) {
 	org := new(Orgnazition)
 	org.ID = orgID
@@ -185,9 +186,7 @@ func (user *UserInfo) OrgJoin(orgID string) (err error) {
 				return user.Update()
 			}
 		}
-
 	}
-
 	return
 }
 

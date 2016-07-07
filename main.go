@@ -44,6 +44,8 @@ func main() {
 	router.POST("/lapi/send_verify_email", Hello)
 	router.GET("/verify_account/:token", VerifyAccount)
 
+	router.GET("/lapi/inbox", Hello)     //get msgs
+	router.PUT("/lapi/inbox/:id", Hello) //mark msg as read.
 	//organizations
 	router.GET("/lapi/orgs", ListOrganizations)
 	router.POST("/lapi/orgs", CreateOrganization)
