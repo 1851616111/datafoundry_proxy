@@ -353,7 +353,8 @@ func (usr *UserInfo) SendVerifyMail() error {
 		return err
 	}
 	link := httpAddrMaker(DataFoundryEnv.Get(DATAFOUNDRY_API_ADDR)) + "/verify_account/" + verifytoken
-	message := fmt.Sprintf(Message, usr.Username, link)
+	message := fmt.Sprintf(Message, usr.Username, link, link)
+
 	return SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
 }
 

@@ -50,7 +50,7 @@ var (
 	DataFoundryEnv Env = &EnvOnce{
 		envs: map[string]string{
 			DATAFOUNDRY_HOST_ADDR: "dev.dataos.io:8443",
-			DATAFOUNDRY_API_ADDR:  "datafoundry.stage.app.dataos.io",
+			DATAFOUNDRY_API_ADDR:  "",
 		},
 	}
 	RedisEnv Env = &EnvOnce{
