@@ -141,9 +141,6 @@ func generatedOrgName(strlen int) (name string) {
 	return string(result)
 }
 
-var Subject string = "Welcome to Datafoundry"
-var Message string = `Hello %s, <br />please click <a href="%s">link</a> to verify your account, the activation link will be expire after 24 hours.`
-
 func checkIfExistldap(err error) bool {
 	if err == nil {
 		return false
