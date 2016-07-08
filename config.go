@@ -165,7 +165,6 @@ func envNil(k string) {
 }
 
 func init() {
-
 	flag.Parse()
 
 	MysqlEnv.Init()
