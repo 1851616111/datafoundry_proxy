@@ -238,6 +238,12 @@ func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
 	}
+	
+	messageid, e := mustIntParamInPath(params, "id")
+	if e != nil {
+		JsonResult(w, http.StatusBadRequest, e, nil)
+		return
+	}
 
 	m, err := common.ParseRequestJsonAsMap(r)
 	if err != nil {
@@ -254,11 +260,11 @@ func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		}
 	}
 
-	messageid, e := mustIntParamInMap (m, "messageid")
-	if e != nil {
-		JsonResult(w, http.StatusBadRequest, e, nil)
-		return
-	}
+	//messageid, e := mustIntParamInMap (m, "messageid")
+	//if e != nil {
+	//	JsonResult(w, http.StatusBadRequest, e, nil)
+	//	return
+	//}
 
 	action, e := mustStringParamInMap (m, "action", StringParamType_UrlWord)
 	if e != nil {
