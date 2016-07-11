@@ -70,24 +70,32 @@ func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error
 		Status:       OrgMemberStatusjoined,
 	}
 	org.MemberList = append(org.MemberList, member)
-	if err = dbstore.SetValue(etcdOrgPath(org.ID), org, false); err != nil {
-		glog.Error(err)
+	if err = usr.CreateProject(); err != nil {
+		return nil, err
 	} else {
-		orgbrief := OrgBrief{OrgID: org.ID, OrgName: org.Name}
-		if usr.OrgList != nil {
+		if _, err = org.Create(); err == nil {
+
+			orgbrief := OrgBrief{OrgID: org.ID, OrgName: org.Name}
 			usr.OrgList = append(usr.OrgList, orgbrief)
-		} else {
-			usr.OrgList = []OrgBrief{orgbrief}
+			// if usr.OrgList != nil {
+			// 	usr.OrgList = append(usr.OrgList, orgbrief)
+			// } else {
+			// 	usr.OrgList = []OrgBrief{orgbrief}
+			// }
+			if err = usr.Update(); err != nil {
+				glog.Error(err)
+				return nil, err
+			}
+			return org, nil
 		}
-		if err = usr.Update(); err != nil {
-			glog.Error(err)
-			return nil, err
-		}
-		return org, nil
 	}
 	return neworg, err
 }
 
+func (user *UserInfo) CreateProject() (err error) {
+	glog.Infoln(user)
+	return
+}
 func (usr *UserInfo) CheckIfOrgExist(orgName string) bool {
 	for _, org := range usr.OrgList {
 		if org.OrgName == orgName {
@@ -384,7 +392,7 @@ func (user *UserInfo) InitUserProject(token string) (err error) {
 			glog.Infoln(string(b))
 			if resp.StatusCode == http.StatusOK {
 				user.Status.Initialized = true
-				err = dbstore.SetValue(etcdProfilePath(user.Username), user, false)
+				err = user.Update()
 			}
 		}
 	}

@@ -141,7 +141,7 @@ func CreateOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		http.Error(w, "organization name already exist.", http.StatusBadRequest)
 		return
 	}
-
+	userinfo.token, _ = checkToken(r)
 	if org, err = userinfo.CreateOrg(org); err != nil {
 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -276,6 +276,11 @@ func (o *Orgnazition) Get() (org *Orgnazition, err error) {
 }
 
 func (o *Orgnazition) Update() (org *Orgnazition, err error) {
+
+	return o.Create()
+}
+
+func (o *Orgnazition) Create() (org *Orgnazition, err error) {
 	if err = dbstore.SetValue(etcdOrgPath(o.ID), o, false); err != nil {
 		glog.Error(err)
 		return nil, err

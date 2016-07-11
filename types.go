@@ -8,6 +8,7 @@ type UserInfo struct {
 	CreateTime string     `json:"creation_time"`
 	OrgList    []OrgBrief `json:"orgnazitions,omitempty"`
 	Status     UserStatus `json:"status,omitempty"`
+	token      string
 }
 type OrgBrief struct {
 	OrgID    string `json:"org_id"`
@@ -38,12 +39,14 @@ type Password struct {
 }
 
 type Orgnazition struct {
-	ID         string         `json:"id"`
-	Name       string         `json:"name"`
-	CreateBy   string         `json:"create_by"`
-	CreateTime string         `json:"creation_time"`
-	MemberList []OrgMember    `json:"members"`
-	Status     OrgStatusPhase `json:"status"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	CreateBy    string         `json:"create_by"`
+	CreateTime  string         `json:"creation_time"`
+	MemberList  []OrgMember    `json:"members"`
+	Status      OrgStatusPhase `json:"status"`
+	RoleBinding bool           `json:"rolebinding"`
+	Reason      string         `json:"reason,omitempty"`
 }
 
 type OrgnazitionList struct {
