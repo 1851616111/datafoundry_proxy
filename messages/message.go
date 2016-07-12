@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	//"time"
-	"strings"
+	//"strings"
 
 	"github.com/julienschmidt/httprouter"
 
@@ -24,7 +24,7 @@ const ToUsersMessageTopic = "to_users.json"
 
 func getReceiverFromMap(m map[string]interface{}, multiple bool) (interface{}, int, *Error) {
 	if multiple {
-		receiver, e := mustStringParamInMap(m, "receiver", StringParamType_General)
+		receiver, e := MustStringParamInMap(m, "receiver", StringParamType_General)
 		if e != nil {
 			return nil, 0, e
 		}
@@ -48,7 +48,7 @@ func getReceiverFromMap(m map[string]interface{}, multiple bool) (interface{}, i
 		return receivers[:index], index, nil
 	}
 	
-	r, e := mustStringParamInMap(m, "receiver", StringParamType_Email)
+	r, e := MustStringParamInMap(m, "receiver", StringParamType_Email)
 	return r, 1, e
 }
 
@@ -92,20 +92,36 @@ func sendAdminBroadcastMessage(currentUserName string, level int, message_data s
 // 
 //==================================================================
 
-const (
-	Message_SiteNotify = "sitenotify"
-	Message_AccoutMsg  = "accoutmsg"
-	Message_Alert      = "alert"
-)
-
-func CreateInboxMessage(messageType, receiver, sender string, jsonData string) (int64, error) {
+func CreateInboxMessage(messageType, receiver, sender, hints, jsonData string) (int64, error) {
 	db := getDB()
 	if db == nil {
 		return 0, errors.New("db not inited")
 	}
 	
-	return notification.CreateMessageForBrowser(db, messageType, receiver, sender, notification.Level_General, jsonData)
+	return notification.CreateMessage(db, messageType, receiver, sender, notification.Level_General, hints, jsonData)
 }
+
+func GetMessageByUserAndID(currentUserName string, messageid int64) (*notification.Message, error) {
+	db := getDB()
+	if db == nil {
+		return nil, errors.New("db not inited")
+	}
+	
+	return notification.GetMessageByUserAndID(db, currentUserName, messageid)
+}
+
+func ModifyMessageDataByID(messageid int64, jsonData string) error {
+	db := getDB()
+	if db == nil {
+		return errors.New("db not inited")
+	}
+	
+	return notification.ModifyMessageDataByID(db, messageid, jsonData)
+}
+
+//==================================================================
+// 
+//==================================================================
 
 func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	db := getDB()
@@ -114,7 +130,7 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		return
 	}
 
-	currentUserName, e := mustCurrentUserName(r) // sender, may be a fake username, such as *, which is not email.
+	currentUserName, e := MustCurrentUserName(r) // sender, may be a fake username, such as *, which is not email.
 	if e != nil {
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
@@ -132,7 +148,7 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		return
 	}
 
-	message_type, e := mustStringParamInMap(m, "type", StringParamType_UrlWord) // must url word, for it is used in sql
+	message_type, e := MustStringParamInMap(m, "type", StringParamType_UrlWord) // must url word, for it is used in sql
 	if e != nil {
 		JsonResult(w, http.StatusBadRequest, e, nil)
 		return
@@ -203,7 +219,7 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 				return
 			}
 		} else {
-			_, err := notification.CreateMessageForBrowser(db, message_type, rrr, currentUserName, level, message_data)
+			_, err := notification.CreateMessage(db, message_type, rrr, currentUserName, level, "", message_data)
 			if err != nil {
 				JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeCreateMessage, err.Error()), nil)
 				go func(){
@@ -215,7 +231,7 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	case []string:
 		go func() {
 			for _, rcvr := range rrr {
-				_, err := notification.CreateMessageForBrowser(db, message_type, rcvr, currentUserName, level, message_data)
+				_, err := notification.CreateMessage(db, message_type, rcvr, currentUserName, level, "", message_data)
 				if err != nil {
 					Logger.Warningf("batch send message {%s, %s, %s, %d, %s} error: %s",  message_type, rcvr, currentUserName, level, message_data, err.Error())
 				}
@@ -233,13 +249,13 @@ func DeleteMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		return
 	}
 
-	currentUserName, e := mustCurrentUserName(r)
+	currentUserName, e := MustCurrentUserName(r)
 	if e != nil {
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
 	}
 	
-	messageid, e := mustIntParamInPath(params, "id")
+	messageid, e := MustIntParamInPath(params, "id")
 	if e != nil {
 		JsonResult(w, http.StatusBadRequest, e, nil)
 		return
@@ -251,71 +267,58 @@ func DeleteMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		JsonResult(w, http.StatusBadRequest, GetError2(ErrorCodeInvalidParameters, err.Error()), nil)
 		return
 	}
-	
-	forclient := false
-	if m["forclient"] != "" {
-		forclient, e = mustBoolParamInMap(m, "forclient")
-		if e != nil {
-			JsonResult(w, http.StatusBadRequest, e, nil)
-			return
-		}
-	}
 
-	//messageid, e := mustIntParamInMap (m, "messageid")
+	//messageid, e := MustIntParamInMap (m, "messageid")
 	//if e != nil {
 	//	JsonResult(w, http.StatusBadRequest, e, nil)
 	//	return
 	//}
 
-	action, e := mustStringParamInMap (m, "action", StringParamType_UrlWord)
+	action, e := MustStringParamInMap (m, "action", StringParamType_UrlWord)
 	if e != nil {
 		JsonResult(w, http.StatusBadRequest, e, nil)
 		return
 	}
 	*/
 
-	r.ParseForm()
-	
-	forclient := false
-	if r.Form.Get("forclient") != "" {
-		forclient, e = mustBoolParamInQuery(r, "forclient")
-		if e != nil {
-			JsonResult(w, http.StatusBadRequest, e, nil)
-			return
-		}
-	}
+	//r.ParseForm()
 
-	if forclient {
-		err := notification.DeleteUserMessageForClient(db, currentUserName, messageid)
-		if err != nil {
-			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
-			return
-		}
-	} else {
-		err := notification.DeleteUserMessageForBrowser(db, currentUserName, messageid)
-		if err != nil {
-			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
-			return
-		}
+	err := notification.DeleteUserMessage(db, currentUserName, messageid)
+	if err != nil {
+		JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+		return
 	}
 
 	JsonResult(w, http.StatusOK, nil, nil)
 }
 
 func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	ModifyMessageWithCustomHandler(w, r, params, nil)
+}
+
+func defaultModifyMessageCustomHandler(r *http.Request, params httprouter.Params, m map[string]interface{}) (bool, *Error) {
+	return false, nil
+}
+
+func ModifyMessageWithCustomHandler(w http.ResponseWriter, r *http.Request, params httprouter.Params,
+	customF func (r *http.Request, params httprouter.Params, m map[string]interface{}) (bool, *Error)) {
+	if customF == nil {
+		customF = defaultModifyMessageCustomHandler
+	}
+	
 	db := getDB()
 	if db == nil {
 		JsonResult(w, http.StatusInternalServerError, GetError(ErrorCodeDbNotInitlized), nil)
 		return
 	}
 
-	currentUserName, e := mustCurrentUserName(r)
+	currentUserName, e := MustCurrentUserName(r)
 	if e != nil {
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
 	}
 	
-	messageid, e := mustIntParamInPath(params, "id")
+	messageid, e := MustIntParamInPath(params, "id")
 	if e != nil {
 		JsonResult(w, http.StatusBadRequest, e, nil)
 		return
@@ -326,42 +329,33 @@ func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		JsonResult(w, http.StatusBadRequest, GetError2(ErrorCodeInvalidParameters, err.Error()), nil)
 		return
 	}
-	
-	forclient := false
-	if m["forclient"] != "" {
-		forclient, e = mustBoolParamInMap(m, "forclient")
-		if e != nil {
-			JsonResult(w, http.StatusBadRequest, e, nil)
-			return
-		}
-	}
 
-	//messageid, e := mustIntParamInMap (m, "messageid")
+	//messageid, e := MustIntParamInMap (m, "messageid")
 	//if e != nil {
 	//	JsonResult(w, http.StatusBadRequest, e, nil)
 	//	return
 	//}
 
-	action, e := mustStringParamInMap (m, "action", StringParamType_UrlWord)
+	action, e := MustStringParamInMap (m, "action", StringParamType_UrlWord)
 	if e != nil {
 		JsonResult(w, http.StatusBadRequest, e, nil)
 		return
 	}
-
-	if forclient {
-		err := notification.ModifyUserMessageForClient(db, currentUserName, messageid, action)
+	
+	handled, err := notification.ModifyUserMessage(db, currentUserName, messageid, action)
+	if handled {
 		if err != nil {
-			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+			JsonResult(w, http.StatusBadRequest, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
 			return
 		}
-	} else {
-		err := notification.ModifyUserMessageForBrowser(db, currentUserName, messageid, action)
-		if err != nil {
-			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
-			return
-		}
+	} else if handled, e := customF(r, params, m); e != nil {
+		JsonResult(w, http.StatusBadRequest, e, nil)
+		return
+	} else if ! handled {
+		JsonResult(w, http.StatusBadRequest, GetError2(ErrorCodeInvalidParameters, "not handled"), nil)
+		return
 	}
-
+	
 	JsonResult(w, http.StatusOK, nil, nil)
 }
 
@@ -372,26 +366,17 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 		return
 	}
 
-	currentUserName, e := mustCurrentUserName(r)
+	currentUserName, e := MustCurrentUserName(r)
 	if e != nil {
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
 	}
 
 	r.ParseForm()
-	
-	forclient := false
-	if r.Form.Get("forclient") != "" {
-		forclient, e = mustBoolParamInQuery(r, "forclient")
-		if e != nil {
-			JsonResult(w, http.StatusBadRequest, e, nil)
-			return
-		}
-	}
 
 	level := notification.Level_Any
 	if r.Form.Get("level") != "" {
-		lvl, e := mustIntParamInQuery(r, "level")
+		lvl, e := MustIntParamInQuery(r, "level")
 		if e != nil {
 			JsonResult(w, http.StatusBadRequest, e, nil)
 			return
@@ -402,7 +387,7 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 
 	status := notification.Status_Either
 	if r.Form.Get("status") != "" {
-		stts, e := mustIntParamInQuery(r, "status")
+		stts, e := MustIntParamInQuery(r, "status")
 		if e != nil {
 			JsonResult(w, http.StatusBadRequest, e, nil)
 			return
@@ -416,7 +401,7 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	// message_type can be ""
 	message_type := r.Form.Get("type")
 	if message_type != "" {
-		message_type, e = mustStringParamInQuery(r, "type", StringParamType_UrlWord)
+		message_type, e = MustStringParamInQuery(r, "type", StringParamType_UrlWord)
 		if e != nil {
 			JsonResult(w, http.StatusBadRequest, e, nil)
 			return
@@ -427,7 +412,7 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	sender := r.Form.Get("sender")
 	if sender != "" {
 		// the sender may be email, or some special word, ex, @zhang3#aaa.com, $system, ....
-		sender, e = mustStringParamInQuery(r, "sender", StringParamType_UnicodeUrlWord) //StringParamType_EmailOrUrlWord)
+		sender, e = MustStringParamInQuery(r, "sender", StringParamType_UnicodeUrlWord) //StringParamType_EmailOrUrlWord)
 		if e != nil {
 			JsonResult(w, http.StatusBadRequest, e, nil)
 			return
@@ -459,24 +444,13 @@ func GetMyMessages(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	
 	offset, size := optionalOffsetAndSize(r, 30, 1, 100)
 
-	if forclient {
-		//client_messages, err := notification.GetUserMessagesForClient(db, currentUserName, message_type, status, sender, beforetime, aftertime)
-		count, client_messages, err := notification.GetUserMessagesForClient(db, currentUserName, message_type, level, status, sender, offset, size)
-		if err != nil {
-			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeQueryMessage, err.Error()), nil)
-			return
-		}
-	
-		JsonResult(w, http.StatusOK, nil, newQueryListResult(count, client_messages))
-	} else {
-		// /browser_messages, err := notification.GetUserMessagesForBrowser(db, currentUserName, message_type, status, sender, beforetime, aftertime)
-		count, browser_messages, err := notification.GetUserMessagesForBrowser(db, currentUserName, message_type, level, status, sender, offset, size)
-		if err != nil {
-			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeQueryMessage, err.Error()), nil)
-			return
-		}
-		JsonResult(w, http.StatusOK, nil, newQueryListResult(count, browser_messages))
+	// /browser_messages, err := notification.GetUserMessagesForBrowser(db, currentUserName, message_type, status, sender, beforetime, aftertime)
+	count, myMessages, err := notification.GetUserMessages(db, currentUserName, message_type, level, status, sender, offset, size)
+	if err != nil {
+		JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeQueryMessage, err.Error()), nil)
+		return
 	}
+	JsonResult(w, http.StatusOK, nil, newQueryListResult(count, myMessages))
 }
 
 func GetNotificationStats(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -486,7 +460,7 @@ func GetNotificationStats(w http.ResponseWriter, r *http.Request, params httprou
 		return
 	}
 
-	currentUserName, e := mustCurrentUserName(r)
+	currentUserName, e := MustCurrentUserName(r)
 	if e != nil {
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
@@ -497,7 +471,7 @@ func GetNotificationStats(w http.ResponseWriter, r *http.Request, params httprou
 	// category can be ""
 	category := r.Form.Get("category")
 	if category != "" {
-		category, e = mustStringParamInQuery(r, "category", StringParamType_UrlWord)
+		category, e = MustStringParamInQuery(r, "category", StringParamType_UrlWord)
 		if e != nil {
 			JsonResult(w, http.StatusBadRequest, e, nil)
 			return
@@ -515,7 +489,7 @@ func GetNotificationStats(w http.ResponseWriter, r *http.Request, params httprou
 		return
 	}
 
-	message_stats, err := notification.RetrieveUserMessageStats_ForBrowser(db, currentUserName, stat_category)
+	message_stats, err := notification.RetrieveUserMessageStats(db, currentUserName, stat_category)
 	if err != nil {
 		JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeGetMessageStats, err.Error()), nil)
 		return
@@ -535,7 +509,7 @@ func ClearNotificationStats(w http.ResponseWriter, r *http.Request, params httpr
 		return
 	}
 
-	currentUserName, e := mustCurrentUserName(r)
+	currentUserName, e := MustCurrentUserName(r)
 	if e != nil {
 		JsonResult(w, http.StatusUnauthorized, e, nil)
 		return
@@ -576,34 +550,13 @@ func HandleNotificationsFromQueue(topic string, key, value []byte) error {
 	if err != nil {
 		return err
 	}
-	
-	var forBrowser, forClient bool
-	if len(key) == 0 {
-		forBrowser = true
-		forClient = false
-	} else {
-		keystr := strings.ToLower(string(key))
-		forBrowser = strings.Index(keystr, "notforbrowser") < 0
-		forClient = strings.Index(keystr, "forclient") >= 0
-	}
-	
-	if forClient {
-		_, err = notification.CreateMessageForClient(db, msg.Type, msg.Receiver, msg.Sender, msg.Level, string(json_bytes))
-		if err != nil {
-			Logger.Warningf("CreateMessageForClient error: %s\nMessage=%s", err.Error(), string(value))
-		} else {
-			Logger.Warningf("CreateMessageForClient succeeded: %s", string(value))
-		}
-	}
 
-	if forBrowser {
-		_, err = notification.CreateMessageForBrowser(db, msg.Type, msg.Receiver, msg.Sender, msg.Level, string(json_bytes))
-		if err != nil {
-			Logger.Warningf("CreateMessageForBrowser error: %s\nMessage=%s", err.Error(), string(value))
-			return err
-		} else {
-			Logger.Warningf("CreateMessageForBrowser succeeded: %s", string(value))
-		}
+	_, err = notification.CreateMessage(db, msg.Type, msg.Receiver, msg.Sender, msg.Level, "", string(json_bytes))
+	if err != nil {
+		Logger.Warningf("CreateMessage error: %s\nMessage=%s", err.Error(), string(value))
+		return err
+	} else {
+		Logger.Warningf("CreateMessage succeeded: %s", string(value))
 	}
 	
 	return nil

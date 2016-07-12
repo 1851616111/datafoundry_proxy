@@ -45,6 +45,7 @@ func main() {
 	router.GET("/verify_account/:token", VerifyAccount)
 
 	router.GET("/lapi/inbox", GetMessages)       //get msgs
+	router.GET("/lapi/inbox_stat", GetMessageStat)       //get msgs
 	router.PUT("/lapi/inbox/:id", ModifyMessage) //mark msg as read.
 	router.DELETE("/lapi/inbox/:id", DeleteMessage) //mark msg as read.
 	//organizations

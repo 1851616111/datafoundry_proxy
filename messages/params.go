@@ -28,7 +28,7 @@ const (
 //
 //======================================================
 
-func mustBoolParam(params httprouter.Params, paramName string) (bool, *Error) {
+func MustBoolParam(params httprouter.Params, paramName string) (bool, *Error) {
 	bool_str := params.ByName(paramName)
 	if bool_str == "" {
 		return false, newInvalidParameterError(fmt.Sprintf("%s can't be blank", paramName))
@@ -42,7 +42,7 @@ func mustBoolParam(params httprouter.Params, paramName string) (bool, *Error) {
 	return b, nil
 }
 
-func mustBoolParamInMap(m map[string]interface{}, paramName string) (bool, *Error) {
+func MustBoolParamInMap(m map[string]interface{}, paramName string) (bool, *Error) {
 	v, ok := m [paramName]
 	if ok {
 		b, ok := v.(bool)
@@ -56,7 +56,7 @@ func mustBoolParamInMap(m map[string]interface{}, paramName string) (bool, *Erro
 	return false, newInvalidParameterError(fmt.Sprintf("param %s is not found", paramName))
 }
 
-func mustBoolParamInQuery(r *http.Request, paramName string) (bool, *Error) {
+func MustBoolParamInQuery(r *http.Request, paramName string) (bool, *Error) {
 	bool_str := r.Form.Get(paramName)
 	if bool_str == "" {
 		return false, newInvalidParameterError(fmt.Sprintf("%s can't be blank", paramName))
@@ -114,15 +114,15 @@ func _mustIntParam(paramName string, int_str string) (int64, *Error) {
 	return i, nil
 }
 
-func mustIntParamInQuery(r *http.Request, paramName string) (int64, *Error) {
+func MustIntParamInQuery(r *http.Request, paramName string) (int64, *Error) {
 	return _mustIntParam(paramName, r.Form.Get(paramName))
 }
 
-func mustIntParamInPath(params httprouter.Params, paramName string) (int64, *Error) {
+func MustIntParamInPath(params httprouter.Params, paramName string) (int64, *Error) {
 	return _mustIntParam(paramName, params.ByName(paramName))
 }
 
-func mustIntParamInMap(m map[string]interface{}, paramName string) (int64, *Error) {
+func MustIntParamInMap(m map[string]interface{}, paramName string) (int64, *Error) {
 	v, ok := m[paramName]
 	if ok {
 		i, ok := v.(float64)
@@ -148,7 +148,7 @@ func optionalIntParamInMap(m map[string]interface{}, paramName string, defaultVa
 	return defaultValue
 }
 
-func mustFloatParam(params httprouter.Params, paramName string) (float64, *Error) {
+func MustFloatParam(params httprouter.Params, paramName string) (float64, *Error) {
 	float_str := params.ByName(paramName)
 	if float_str == "" {
 		return 0.0, newInvalidParameterError(fmt.Sprintf("%s can't be blank", paramName))
@@ -196,15 +196,15 @@ func _mustStringParam(paramName string, str string, paramType int) (string, *Err
 	return str, nil
 }
 
-func mustStringParamInPath(params httprouter.Params, paramName string, paramType int) (string, *Error) {
+func MustStringParamInPath(params httprouter.Params, paramName string, paramType int) (string, *Error) {
 	return _mustStringParam(paramName, params.ByName(paramName), paramType)
 }
 
-func mustStringParamInQuery(r *http.Request, paramName string, paramType int) (string, *Error) {
+func MustStringParamInQuery(r *http.Request, paramName string, paramType int) (string, *Error) {
 	return _mustStringParam(paramName, r.Form.Get(paramName), paramType)
 }
 
-func mustStringParamInMap(m map[string]interface{}, paramName string, paramType int) (string, *Error) {
+func MustStringParamInMap(m map[string]interface{}, paramName string, paramType int) (string, *Error) {
 	v, ok := m[paramName]
 	if ok {
 		str, ok := v.(string)
@@ -240,7 +240,7 @@ func optionalTimeParamInQuery(r *http.Request, paramName string, timeLayout stri
 //
 //======================================================
 
-//func mustCurrentUserName(r *http.Request) (string, *Error) {
+//func MustCurrentUserName(r *http.Request) (string, *Error) {
 //	username, _, ok := r.BasicAuth()
 //	if !ok {
 //		return "", GetError(ErrorCodeAuthFailed)
@@ -249,7 +249,7 @@ func optionalTimeParamInQuery(r *http.Request, paramName string, timeLayout stri
 //	return username, nil
 //}
 
-func mustCurrentUserName(r *http.Request) (string, *Error) {
+func MustCurrentUserName(r *http.Request) (string, *Error) {
 	username := r.Header.Get("User")
 	if username == "" {
 		return "", GetError(ErrorCodeAuthFailed)
@@ -268,8 +268,8 @@ func getCurrentUserName(r *http.Request) string {
 	return r.Header.Get("User")
 }
 
-func mustRepoName(params httprouter.Params) (string, *Error) {
-	repo_name, e := mustStringParamInPath(params, "repname", StringParamType_UrlWord)
+func MustRepoName(params httprouter.Params) (string, *Error) {
+	repo_name, e := MustStringParamInPath(params, "repname", StringParamType_UrlWord)
 	if e != nil {
 		return "", e
 	}
@@ -277,13 +277,13 @@ func mustRepoName(params httprouter.Params) (string, *Error) {
 	return repo_name, nil
 }
 
-func mustRepoAndItemName(params httprouter.Params) (repo_name string, item_name string, e *Error) {
-	repo_name, e = mustStringParamInPath(params, "repname", StringParamType_UrlWord)
+func MustRepoAndItemName(params httprouter.Params) (repo_name string, item_name string, e *Error) {
+	repo_name, e = MustStringParamInPath(params, "repname", StringParamType_UrlWord)
 	if e != nil {
 		return
 	}
 
-	item_name, e = mustStringParamInPath(params, "itemname", StringParamType_UrlWord)
+	item_name, e = MustStringParamInPath(params, "itemname", StringParamType_UrlWord)
 	if e != nil {
 		return
 	}

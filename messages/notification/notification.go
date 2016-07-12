@@ -226,42 +226,35 @@ type Message struct {
 	Time         time.Time `json:"time"`
 	Receiver     string    `json:"receiver"`
 	Sender       string    `json:"sender,omitempty"`
+	Hints        string    `json:"Hints,omitempty"`
 	Raw_data     string    `json:"-"` // raw_data
 	Json_data    interface{} `json:"data"` // json.Unmarshal(Raw_data)
 }
 
 const (
-	MessageTableName_ForBrowser = "DH_MESSAGE"
-	MessageTableName_ForClient  = "DH_MESSAGE_CLIENT"
+	MessageTableName_ForBrowser = "DF_MESSAGE"
 )
 
 //=============================================================
 //
 //=============================================================
 
-func CreateMessage(db *sql.DB, messageType, receiver, sender string, level int, jsonData string) (int64, error) {
-	return createMessage(db, MessageTableName_ForBrowser, messageType, receiver, sender, level, jsonData)
-}
-func CreateMessageForBrowser(db *sql.DB, messageType, receiver, sender string, level int, jsonData string) (int64, error) {
-	return createMessage(db, MessageTableName_ForBrowser, messageType, receiver, sender, level, jsonData)
+func CreateMessage(db *sql.DB, messageType, receiver, sender string, level int, hints, jsonData string) (int64, error) {
+	return createMessage(db, MessageTableName_ForBrowser, messageType, receiver, sender, level, hints, jsonData)
 }
 
-func CreateMessageForClient(db *sql.DB, messageType, receiver, sender string, level int, jsonData string) (int64, error) {
-	return createMessage(db, MessageTableName_ForClient, messageType, receiver, sender, level, jsonData)
-}
-
-func createMessage(db *sql.DB, tableName, messageType, receiver, sender string, level int, jsonData string) (int64, error) {
+func createMessage(db *sql.DB, tableName, messageType, receiver, sender string, level int, hints, jsonData string) (int64, error) {
 	nowstr := time.Now().Format("2006-01-02 15:04:05.999999")
 	sqlstr := fmt.Sprintf(`insert into %s (
 						TYPE, STATUS, LEVEL, TIME,
-						RECEIVER, SENDER, DATA
+						RECEIVER, SENDER, HINTS, DATA
 						) values (
 						'%s', %d, %d, '%s', 
-						'%s', '%s', ?
+						'%s', '%s', '%s', ?
 						)`,
 		tableName,
 		messageType, Status_Unread, level, nowstr,
-		receiver, sender)
+		receiver, sender, hints)
 	result, err := db.Exec(sqlstr, jsonData)
 	if err != nil {
 		return 0, err
@@ -278,12 +271,8 @@ func createMessage(db *sql.DB, tableName, messageType, receiver, sender string, 
 	return id, nil
 }
 
-func DeleteUserMessageForBrowser(db *sql.DB, currentUserName string, messageid int64) error {
+func DeleteUserMessage(db *sql.DB, currentUserName string, messageid int64) error {
 	return deleteUserMessage(db, currentUserName, MessageTableName_ForBrowser, messageid)
-}
-
-func DeleteUserMessageForClient(db *sql.DB, currentUserName string, messageid int64) error {
-	return deleteUserMessage(db, currentUserName, MessageTableName_ForClient, messageid)
 }
 
 func deleteUserMessage(db *sql.DB, currentUserName string, tableName string, messageid int64) error {
@@ -303,12 +292,8 @@ func deleteUserMessage(db *sql.DB, currentUserName string, tableName string, mes
 	return nil
 }
 
-func ModifyUserMessageForBrowser(db *sql.DB, currentUserName string, messageid int64, action string) error {
+func ModifyUserMessage(db *sql.DB, currentUserName string, messageid int64, action string) (bool, error) {
 	return modifyUserMessage(db, currentUserName, MessageTableName_ForBrowser, messageid, action)
-}
-
-func ModifyUserMessageForClient(db *sql.DB, currentUserName string, messageid int64, action string) error {
-	return modifyUserMessage(db, currentUserName, MessageTableName_ForClient, messageid, action)
 }
 
 const (
@@ -317,7 +302,8 @@ const (
 )
 
 // now action can only be "read", "unread"
-func modifyUserMessage(db *sql.DB, currentUserName string, tableName string, messageid int64, action string) error {
+// return bool means handled or not
+func modifyUserMessage(db *sql.DB, currentUserName string, tableName string, messageid int64, action string) (bool, error) {
 	status := Status_Either
 	if action == Action_SetRead {
 		status = Status_Read
@@ -326,12 +312,12 @@ func modifyUserMessage(db *sql.DB, currentUserName string, tableName string, mes
 	}
 
 	if status == Status_Either {
-		return fmt.Errorf("invalid action: %s", action)
+		return false, nil
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return true, err
 	}
 
 	sqlget := fmt.Sprintf(`select RECEIVER, STATUS from %s where MESSAGE_ID=%d`, tableName, messageid)
@@ -340,37 +326,65 @@ func modifyUserMessage(db *sql.DB, currentUserName string, tableName string, mes
 	err = tx.QueryRow(sqlget).Scan(&receiver, &old_status)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return true, err
 	}
 
 	if receiver != currentUserName {
 		tx.Rollback()
-		return errors.New("user can't modify message of other users")
+		return true, errors.New("user can't modify message of other users")
 	}
 
 	if old_status == status {
 		tx.Rollback()
-		return nil
+		return true, nil
 	}
 
 	sqlupdate := fmt.Sprintf(`update %s set STATUS=%d where MESSAGE_ID=%d`, tableName, status, messageid)
 	_, err = tx.Exec(sqlupdate)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return true, err
 	}
 
 	tx.Commit()
 
-	return nil
+	return true, nil
 }
 
-func GetUserMessagesForBrowser(db *sql.DB, username string, messagetype string, level int, status int, sender string, offset int64, limit int) (int64, []*Message, error) {
+func ModifyMessageDataByID(db *sql.DB, messageid int64, jsonData string) error {
+	return modifyMessageDataByID(db, MessageTableName_ForBrowser, messageid, jsonData)
+}
+
+func modifyMessageDataByID(db *sql.DB, tableName string, messageid int64, jsonData string) error {
+	sqlupdate := fmt.Sprintf(`update %s set DATA=? where MESSAGE_ID=%d`, tableName, messageid)
+	_, err := db.Exec(sqlupdate, jsonData)
+	return err
+}
+
+func GetMessageByUserAndID(db *sql.DB, currentUserName string, messageid int64) (*Message, error) {
+	return getMessageByUserAndID(db, currentUserName, MessageTableName_ForBrowser, messageid)
+}
+
+func getMessageByUserAndID(db *sql.DB, currentUserName string, tableName string, messageid int64) (*Message, error) {
+	sqlwhere := fmt.Sprintf(" MESSAGE_ID=%d", messageid)
+	if currentUserName != "" {
+		sqlwhere = sqlwhere + fmt.Sprintf(" and RECEIVER='%s'", currentUserName)
+	}
+	
+	messages, err := queryMessages(db, tableName, sqlwhere, 1, 0)
+	if err != nil {
+		return nil, err
+	}
+	
+	if len(messages) == 0 {
+		return nil, errors.New("not found")
+	}
+	
+	return messages[0], nil
+}
+
+func GetUserMessages(db *sql.DB, username string, messagetype string, level int, status int, sender string, offset int64, limit int) (int64, []*Message, error) {
 	return getUserMessages(db, username, MessageTableName_ForBrowser, messagetype, level, status, sender, offset, limit)
-}
-
-func GetUserMessagesForClient(db *sql.DB, username string, messagetype string, level int, status int, sender string, offset int64, limit int) (int64, []*Message, error) {
-	return getUserMessages(db, username, MessageTableName_ForClient, messagetype, level, status, sender, offset, limit)
 }
 
 func validateOffsetAndLimit(count int64, offset *int64, limit *int) {
@@ -447,48 +461,19 @@ func getUserMessages(db *sql.DB, username string, tableName string, messagetype 
 		//}
 	}
 	
-	/*
 	go func(){
 		num := len(messages)
 		for i := 0; i < num; i++ {
 			msg := messages[i]
-			modifyUserMessage(db, username, tableName, msg.Message_id, Action_SetRead)
-			//if msg.Status == Status_Unread {
-			//	UpdateUserMessageStats(db, username, msg.Message_type, -1)
-			//}
+			if msg.Status == Status_Unread {
+				modifyUserMessage(db, username, tableName, msg.Message_id, Action_SetRead)
+				//UpdateUserMessageStats(db, username, msg.Message_type, -1)
+			}
 		}
 	}()
-	*/
 	
 	return count, messages, nil
 }
-
-/*
-func GetUserMessagesForClient(db *sql.DB, username string) ([]*Message, error) {
-	clientLastReadMessageIdStatKey := stat.GetClientLastReadMessageIdStatKey(userName)
-	
-	lastReadMessgeID, err := stat.RetrieveStat(db, clientLastReadMessageIdStatKey)
-	if err != nil {
-		return nil. err
-	}
-	
-	sqlwhere := fmt.Sprintf(`
-			 RECEIVER='%s' and FOR_CLIENT=1 and MESSAGE_ID>%d order by MESSAGE_ID asc
-			 `, username, lastReadMessgeID)
-	
-	messages, err := queryMessages(db, MessageTableName_ForClient, sqlwhere, 30)
-	if err != nil {
-		return nil, err
-	}
-	
-	num := len(messages)
-	if num > 0 {
-		go stat.SetStat(db, clientLastReadMessageIdStatKey, messages[num-1].Message_id)
-	}
-	
-	return messages, nil
-}
-*/
 
 func queryMessagesCount(db *sql.DB, tableName string, sqlWhere string) (int64, error) {
 	count := int64(0)
@@ -507,7 +492,7 @@ func queryMessages(db *sql.DB, tableName string, sqlWhere string, limit int, off
 	sql_str := fmt.Sprintf(`select 
 					MESSAGE_ID,
 					TYPE, STATUS, LEVEL, TIME,
-					RECEIVER, SENDER, DATA
+					RECEIVER, SENDER, HINTS, DATA
 					from %s 
 					where %s
 					limit %d
@@ -534,7 +519,7 @@ func queryMessages(db *sql.DB, tableName string, sqlWhere string, limit int, off
 		if err := rows.Scan(
 			&msg.Message_id,
 			&msg.Message_type, &msg.Status, &msg.Level, &msg.Time,
-			&msg.Receiver, &msg.Sender, &msg.Raw_data); err != nil {
+			&msg.Receiver, &msg.Sender, &msg.Hints, &msg.Raw_data); err != nil {
 			return nil, err
 		}
 		if num >= len(messages) {
@@ -551,12 +536,8 @@ func queryMessages(db *sql.DB, tableName string, sqlWhere string, limit int, off
 	return messages[:num], nil
 }
 
-func RetrieveUserMessageStats_ForBrowser(db *sql.DB, username string, catrgory int) (map[string]int, error) {
+func RetrieveUserMessageStats(db *sql.DB, username string, catrgory int) (map[string]int, error) {
 	return retrieveUserMessageStats(db, MessageTableName_ForBrowser, username, catrgory)
-}
-
-func RetrieveUserMessageStats_ForClient(db *sql.DB, username string) (map[string]int, error) {
-	return retrieveUserMessageStats(db, MessageTableName_ForClient, username, StatCategory_Unknown)
 }
 
 func retrieveUserMessageStats(db *sql.DB, tableName, username string, category int) (map[string]int, error) {
