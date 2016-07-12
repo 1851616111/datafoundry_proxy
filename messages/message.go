@@ -226,6 +226,82 @@ func CreateMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	JsonResult(w, http.StatusOK, nil, nil)
 }
 
+func DeleteMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	db := getDB()
+	if db == nil {
+		JsonResult(w, http.StatusInternalServerError, GetError(ErrorCodeDbNotInitlized), nil)
+		return
+	}
+
+	currentUserName, e := mustCurrentUserName(r)
+	if e != nil {
+		JsonResult(w, http.StatusUnauthorized, e, nil)
+		return
+	}
+	
+	messageid, e := mustIntParamInPath(params, "id")
+	if e != nil {
+		JsonResult(w, http.StatusBadRequest, e, nil)
+		return
+	}
+
+	/*
+	m, err := common.ParseRequestJsonAsMap(r)
+	if err != nil {
+		JsonResult(w, http.StatusBadRequest, GetError2(ErrorCodeInvalidParameters, err.Error()), nil)
+		return
+	}
+	
+	forclient := false
+	if m["forclient"] != "" {
+		forclient, e = mustBoolParamInMap(m, "forclient")
+		if e != nil {
+			JsonResult(w, http.StatusBadRequest, e, nil)
+			return
+		}
+	}
+
+	//messageid, e := mustIntParamInMap (m, "messageid")
+	//if e != nil {
+	//	JsonResult(w, http.StatusBadRequest, e, nil)
+	//	return
+	//}
+
+	action, e := mustStringParamInMap (m, "action", StringParamType_UrlWord)
+	if e != nil {
+		JsonResult(w, http.StatusBadRequest, e, nil)
+		return
+	}
+	*/
+
+	r.ParseForm()
+	
+	forclient := false
+	if r.Form.Get("forclient") != "" {
+		forclient, e = mustBoolParamInQuery(r, "forclient")
+		if e != nil {
+			JsonResult(w, http.StatusBadRequest, e, nil)
+			return
+		}
+	}
+
+	if forclient {
+		err := notification.DeleteUserMessageForClient(db, currentUserName, messageid)
+		if err != nil {
+			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+			return
+		}
+	} else {
+		err := notification.DeleteUserMessageForBrowser(db, currentUserName, messageid)
+		if err != nil {
+			JsonResult(w, http.StatusInternalServerError, GetError2(ErrorCodeModifyMessage, err.Error()), nil)
+			return
+		}
+	}
+
+	JsonResult(w, http.StatusOK, nil, nil)
+}
+
 func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	db := getDB()
 	if db == nil {

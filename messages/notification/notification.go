@@ -278,6 +278,31 @@ func createMessage(db *sql.DB, tableName, messageType, receiver, sender string, 
 	return id, nil
 }
 
+func DeleteUserMessageForBrowser(db *sql.DB, currentUserName string, messageid int64) error {
+	return deleteUserMessage(db, currentUserName, MessageTableName_ForBrowser, messageid)
+}
+
+func DeleteUserMessageForClient(db *sql.DB, currentUserName string, messageid int64) error {
+	return deleteUserMessage(db, currentUserName, MessageTableName_ForClient, messageid)
+}
+
+func deleteUserMessage(db *sql.DB, currentUserName string, tableName string, messageid int64) error {
+	sqlstr := fmt.Sprintf(`delete from %s
+							where RECEIVER='%s' and MESSAGE_ID=%d
+							`, tableName, currentUserName, messageid)
+	result, err := db.Exec(sqlstr)
+	if err != nil {
+		return err
+	}
+
+	n, _ := result.RowsAffected()
+	if n == 0 {
+		return errors.New ("failed to delete")
+	}
+
+	return nil
+}
+
 func ModifyUserMessageForBrowser(db *sql.DB, currentUserName string, messageid int64, action string) error {
 	return modifyUserMessage(db, currentUserName, MessageTableName_ForBrowser, messageid, action)
 }
