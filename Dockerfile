@@ -1,5 +1,6 @@
 FROM alpine
 
+COPY _db /usr/bin/_db
 COPY oauth-proxy /usr/bin
 COPY proxyinit.sh /usr/bin
 
