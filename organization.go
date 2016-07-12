@@ -137,6 +137,12 @@ func CreateOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 		return
 	}
 
+	if len(org.Name) < 2 {
+
+		http.Error(w, "organization name is too short.", http.StatusBadRequest)
+		return
+	}
+
 	if userinfo.CheckIfOrgExist(org.Name) {
 		http.Error(w, "organization name already exist.", http.StatusBadRequest)
 		return
@@ -209,6 +215,7 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 		return
 	}
 
+	user.token, _ = checkToken(r)
 	action := ps.ByName("action")
 	orgID := ps.ByName("org")
 

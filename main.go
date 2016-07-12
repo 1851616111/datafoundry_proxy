@@ -75,8 +75,8 @@ func main() {
 
 func init() {
 	dbinit(new(Etcd))
-
 }
+
 
 func dbinit(driver DBStorage) {
 	dbstore, _ = driver.Init()

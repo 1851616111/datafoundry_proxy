@@ -101,6 +101,14 @@ var (
 	DF_API_Auth string
 )
 
+type Env interface {
+	Init()
+	Validate(func(k string))
+	Get(name string) string
+	Set(key, value string)
+	Print()
+}
+
 type EnvOnce struct {
 	envs map[string]string
 	once sync.Once
@@ -165,6 +173,7 @@ func envNil(k string) {
 }
 
 func init() {
+
 	flag.Parse()
 
 	MysqlEnv.Init()
