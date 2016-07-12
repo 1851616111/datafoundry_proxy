@@ -173,3 +173,24 @@ type ObjectMeta struct {
 	// More info: http://releases.k8s.io/HEAD/docs/user-guide/annotations.md
 	Annotations map[string]string `json:"annotations,omitempty"`
 }
+
+
+// ObjectReference contains enough information to let you inspect or modify the referred object.
+type ObjectReference struct {
+	Kind            string    `json:"kind,omitempty"`
+	Namespace       string    `json:"namespace,omitempty"`
+	Name            string    `json:"name,omitempty"`
+	UID             types.UID `json:"uid,omitempty"`
+	APIVersion      string    `json:"apiVersion,omitempty"`
+	ResourceVersion string    `json:"resourceVersion,omitempty"`
+
+	// Optional. If referring to a piece of an object instead of an entire object, this string
+	// should contain information to identify the sub-object. For example, if the object
+	// reference is to a container within a pod, this would take on a value like:
+	// "spec.containers{name}" (where "name" refers to the name of the container that triggered
+	// the event) or if no container name is specified "spec.containers[2]" (container with
+	// index 2 in this pod). This syntax is chosen only to have some well-defined way of
+	// referencing a part of an object.
+	// TODO: this design is not final and this field is subject to change in the future.
+	FieldPath string `json:"fieldPath,omitempty"`
+}

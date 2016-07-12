@@ -10,6 +10,7 @@ import (
 	"github.com/golang/glog"
 	oapi "github.com/openshift/origin/pkg/user/api/v1"
 	"io/ioutil"
+	kapi "k8s.io/kubernetes/pkg/api/v1"
 	"net/http"
 	"time"
 )
@@ -70,9 +71,10 @@ func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error
 		Status:       OrgMemberStatusjoined,
 	}
 	org.MemberList = append(org.MemberList, member)
-	if err = usr.CreateProject(); err != nil {
+	if err = usr.CreateProject(org); err != nil {
 		return nil, err
 	} else {
+		org.RoleBinding = true
 		if _, err = org.Create(); err == nil {
 
 			orgbrief := OrgBrief{OrgID: org.ID, OrgName: org.Name}
@@ -92,10 +94,156 @@ func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error
 	return neworg, err
 }
 
-func (user *UserInfo) CreateProject() (err error) {
+func (user *UserInfo) CreateProject(org *Orgnazition) (err error) {
 	glog.Infoln(user)
+	project_url := DF_HOST + "/oapi/v1/projectrequests"
+
+	project := new(oapi.ProjectRequest)
+	project.Name = org.ID
+	project.DisplayName = org.Name
+	if reqbody, err := json.Marshal(project); err != nil {
+		glog.Error(err)
+	} else {
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		req, _ := http.NewRequest("POST", project_url, bytes.NewBuffer(reqbody))
+		req.Header.Set("Authorization", user.token)
+		//log.Println(req.Header, bearer)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			glog.Error(err)
+		} else {
+			glog.Infoln(req.Host, req.Method, req.URL.RequestURI(), req.Proto, resp.StatusCode)
+			b, _ := ioutil.ReadAll(resp.Body)
+			glog.Infoln(string(b))
+			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+				return user.CreateRoleBinding(org)
+			} else {
+				return errors.New(string(b))
+			}
+		}
+	}
+
 	return
 }
+
+func (user *UserInfo) UpdateRoleBinding(org *Orgnazition) (err error) {
+	glog.Infoln("create project role...", user.token)
+
+	glog.Infoln(user)
+	AdminRoleUrl := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings/admin"
+	EditRoleUrl := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings/" + "edit-" + org.CreateBy
+
+	AdminRole := new(oapi.RoleBinding)
+	EditRole := new(oapi.RoleBinding)
+
+	AdminRole.RoleRef = kapi.ObjectReference{Name: "admin"}
+	AdminRole.Name = "admin"
+
+	EditRole.RoleRef = kapi.ObjectReference{Name: "edit"}
+	EditRole.Name = "edit-" + org.CreateBy
+
+	for _, member := range org.MemberList {
+		if member.IsAdmin {
+			subject := kapi.ObjectReference{Kind: "User", Name: member.MemberName}
+			AdminRole.Subjects = append(AdminRole.Subjects, subject)
+			AdminRole.UserNames = append(AdminRole.UserNames, member.MemberName)
+		} else {
+			subject := kapi.ObjectReference{Kind: "User", Name: member.MemberName}
+			EditRole.Subjects = append(EditRole.Subjects, subject)
+			EditRole.UserNames = append(EditRole.UserNames, member.MemberName)
+		}
+	}
+
+	var e error
+	reason := make(chan error, 2)
+	go user.OpenshiftUpdateResouce(AdminRoleUrl, AdminRole, reason)
+	go user.OpenshiftUpdateResouce(EditRoleUrl, EditRole, reason)
+	e = <-reason
+	if e != nil {
+		err = e
+	}
+	e = <-reason
+
+	if e != nil {
+		err = e
+	}
+	return
+}
+
+func (user *UserInfo) OpenshiftUpdateResouce(url string, resource interface{}, reason chan error) (err error) {
+	if reqbody, err := json.Marshal(resource); err != nil {
+		glog.Error(err)
+	} else {
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(reqbody))
+		req.Header.Set("Authorization", user.token)
+		//log.Println(req.Header, bearer)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			glog.Error(err)
+		} else {
+			glog.Infoln(req.Host, req.Method, req.URL.RequestURI(), req.Proto, resp.StatusCode)
+			b, _ := ioutil.ReadAll(resp.Body)
+			glog.Infoln(string(b))
+			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+			} else {
+				err = errors.New(string(b))
+			}
+		}
+	}
+	reason <- err
+	return
+}
+
+func (user *UserInfo) CreateRoleBinding(org *Orgnazition) (err error) {
+	glog.Infoln("create project role...", user.token)
+
+	glog.Infoln(user)
+	rolebinding_url := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings"
+
+	rolebinding := new(oapi.RoleBinding)
+	rolebinding.Name = "edit-" + user.Username
+	rolebinding.RoleRef = kapi.ObjectReference{Name: "edit"}
+	if reqbody, err := json.Marshal(rolebinding); err != nil {
+		glog.Error(err)
+	} else {
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		req, _ := http.NewRequest("POST", rolebinding_url, bytes.NewBuffer(reqbody))
+		req.Header.Set("Authorization", user.token)
+		//log.Println(req.Header, bearer)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			glog.Error(err)
+		} else {
+			glog.Infoln(req.Host, req.Method, req.URL.RequestURI(), req.Proto, resp.StatusCode)
+			b, _ := ioutil.ReadAll(resp.Body)
+			glog.Infoln(string(b))
+			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
+				return nil
+			} else {
+				return errors.New(string(b))
+			}
+		}
+	}
+
+	return
+}
+
 func (usr *UserInfo) CheckIfOrgExist(orgName string) bool {
 	for _, org := range usr.OrgList {
 		if org.OrgName == orgName {
@@ -166,7 +314,6 @@ func (user *UserInfo) OrgLeave(orgID string) (err error) {
 				return user.Update()
 			}
 		}
-
 	}
 
 	return
@@ -176,9 +323,9 @@ func (user *UserInfo) OrgJoin(orgID string) (err error) {
 	org := new(Orgnazition)
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
-		if org.IsLastAdmin(user.Username) {
-			return errors.New("orgnazition needs at least one admin.")
-		}
+		// if org.IsLastAdmin(user.Username) {
+		// 	return errors.New("orgnazition needs at least one admin.")
+		// }
 		org = org.MemberJoined(user.Username)
 		if _, err = org.Update(); err != nil {
 			glog.Error(err)
@@ -220,9 +367,10 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (err error) {
 		member.Status = OrgMemberStatusInvited
 		org.MemberList = append(org.MemberList, *member)
 	}
-	if err = dbstore.SetValue(etcdOrgPath(org.ID), org, false); err != nil {
-		glog.Error(err)
+	if err = user.UpdateRoleBinding(org); err != nil {
+		return
 	}
+	_, err = org.Update()
 	return
 }
 
@@ -244,6 +392,9 @@ func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (err erro
 			glog.Error(err)
 			return err
 		} else {
+			if err = user.UpdateRoleBinding(org); err != nil {
+				return
+			}
 			minfo := new(UserInfo)
 			minfo.Username = member.MemberName
 			if minfo, err = minfo.Get(); err != nil {
@@ -253,6 +404,7 @@ func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (err erro
 				minfo = minfo.DeleteOrgFromList(orgID)
 				return minfo.Update()
 			}
+
 		}
 	}
 
@@ -284,6 +436,9 @@ func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (err error) 
 						org.MemberList[idx].PrivilegedBy = ""
 					}
 				*/
+				if err = user.UpdateRoleBinding(org); err != nil {
+					return
+				}
 				if org, err = org.Update(); err == nil {
 					return
 				} else {
@@ -399,6 +554,7 @@ func (user *UserInfo) InitUserProject(token string) (err error) {
 
 	return
 }
+
 func (user *UserInfo) AddToVerify() (verifytoken string, err error) {
 	verifytoken, err = genRandomToken()
 	if err != nil {
