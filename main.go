@@ -5,6 +5,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
+	
+	"github.com/asiainfoLDP/datafoundry_proxy/messages"
 )
 
 type mux struct{}
@@ -42,8 +44,8 @@ func main() {
 	router.POST("/lapi/send_verify_email", Hello)
 	router.GET("/verify_account/:token", VerifyAccount)
 
-	router.GET("/lapi/inbox", Hello)     //get msgs
-	router.PUT("/lapi/inbox/:id", Hello) //mark msg as read.
+	router.GET("/lapi/inbox", GetMessages)       //get msgs
+	router.PUT("/lapi/inbox/:id", ModifyMessage) //mark msg as read.
 	//organizations
 	router.GET("/lapi/orgs", ListOrganizations)
 	router.POST("/lapi/orgs", CreateOrganization)
@@ -56,7 +58,9 @@ func main() {
 	// router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,
-
+	
+	messages.Init(/*router, */MysqlEnv, nil/*KafkaEnv*/, EmailEnv)
+	
 	router.NotFound = &mux{}
 
 	log.Fatal(http.ListenAndServe(":9090", router))

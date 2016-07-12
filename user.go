@@ -12,6 +12,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+	
+	"github.com/asiainfoLDP/datafoundry_proxy/messages"
 )
 
 func (usr *UserInfo) IfExist() (bool, error) {
@@ -196,23 +198,26 @@ func (user *UserInfo) OrgJoin(orgID string) (err error) {
 	return
 }
 
-func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (err error) {
-	org := new(Orgnazition)
+func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnazition, err error) {
+	org = new(Orgnazition)
 	org.ID = orgID
+	var ok bool
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			return errors.New("permission denied.")
+			err = errors.New("permission denied.")
+			return
 		}
 		if org.IsMemberExist(member) {
-			return errors.New("user is already in the orgnazition.")
+			err = errors.New("user is already in the orgnazition.")
+			return
 		}
 		minfo := new(UserInfo)
 		minfo.Username = member.MemberName
-		if ok, err := minfo.IfExist(); !ok {
-			if err != nil {
-				return err
+		if ok, err = minfo.IfExist(); !ok {
+			if err == nil {
+				err = errors.New("user not registered yet.")
 			}
-			return errors.New("user not registered yet.")
+			return
 		}
 		if member.IsAdmin {
 			member.PrivilegedBy = user.Username
@@ -361,9 +366,8 @@ func (usr *UserInfo) SendVerifyMail() error {
 		return err
 	}
 	link := httpAddrMaker(DataFoundryEnv.Get(DATAFOUNDRY_API_ADDR)) + "/verify_account/" + verifytoken
-	message := fmt.Sprintf(Message, usr.Username, link, link)
-
-	return SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
+	message := fmt.Sprintf(Message, usr.Username, link)
+	return messages.SendMail([]string{usr.Email}, []string{}, bccEmail, Subject, message, true)
 }
 
 func (user *UserInfo) InitUserProject(token string) (err error) {
@@ -392,7 +396,7 @@ func (user *UserInfo) InitUserProject(token string) (err error) {
 			glog.Infoln(string(b))
 			if resp.StatusCode == http.StatusOK {
 				user.Status.Initialized = true
-				err = user.Update()
+				err = dbstore.SetValue(etcdProfilePath(user.Username), user, false)
 			}
 		}
 	}
