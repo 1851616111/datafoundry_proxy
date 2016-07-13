@@ -18,7 +18,7 @@ func GetMessages(w http.ResponseWriter, r *http.Request, params httprouter.Param
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -34,7 +34,7 @@ func GetMessageStat(w http.ResponseWriter, r *http.Request, params httprouter.Pa
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -50,7 +50,7 @@ func ModifyMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -66,7 +66,7 @@ func DeleteMessage(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 

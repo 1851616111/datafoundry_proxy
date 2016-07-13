@@ -19,7 +19,7 @@ func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -51,7 +51,7 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -91,7 +91,7 @@ func ListOrganizations(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -118,7 +118,7 @@ func CreateOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -163,7 +163,7 @@ func GetOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 
@@ -197,7 +197,7 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 

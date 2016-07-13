@@ -14,7 +14,7 @@ func PasswordModify(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	var username string
 	var err error
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	password := new(Password)
