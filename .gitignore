@@ -2,7 +2,6 @@
 src
 datafoundry_proxy
 oauth
-oauth-proxy
 start.sh
 dev*
 *test.go
