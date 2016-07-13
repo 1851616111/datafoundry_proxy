@@ -166,11 +166,7 @@ func retHttpCodeJson(code int, bodyCode int, w http.ResponseWriter, a ...interfa
 }
 
 func RespError(w http.ResponseWriter, msg string, errCode int) {
-	resp := new(APIResponse)
-
-	resp.Code = errCode
-	resp.Message = msg
-	resp.Status = http.StatusText(errCode)
+	resp := genRespJson(errCode, msg)
 
 	if body, err := json.MarshalIndent(resp, "", "  "); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -183,6 +179,9 @@ func RespError(w http.ResponseWriter, msg string, errCode int) {
 }
 
 func RespOK(w http.ResponseWriter, data interface{}) {
+	if data == nil {
+		data = genRespJson(http.StatusOK, "")
+	}
 
 	if body, err := json.MarshalIndent(data, "", "  "); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -191,4 +190,13 @@ func RespOK(w http.ResponseWriter, data interface{}) {
 		w.WriteHeader(http.StatusOK)
 		w.Write(body)
 	}
+}
+
+func genRespJson(errCode int, msg string) *APIResponse {
+	resp := new(APIResponse)
+
+	resp.Code = errCode
+	resp.Message = msg
+	resp.Status = http.StatusText(errCode)
+	return resp
 }

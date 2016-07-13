@@ -410,26 +410,26 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnaziti
 	return
 }
 
-func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (err error) {
+func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (org *Orgnazition, err error) {
 	if user.Username == member.MemberName {
-		return errors.New("can't remove yourself.")
+		return nil, errors.New("can't remove yourself.")
 	}
-	org := new(Orgnazition)
+	org = new(Orgnazition)
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			return errors.New("permission denied.")
+			return nil, errors.New("permission denied.")
 		}
 		if !org.IsMemberExist(member) {
-			return errors.New("no such user in the orgnazition.")
+			return nil, errors.New("no such user in the orgnazition.")
 		}
 		org = org.RemoveMember(member.MemberName)
 		if _, err = org.Update(); err != nil {
 			glog.Error(err)
-			return err
+			return nil, err
 		} else {
 			if err = user.UpdateRoleBinding(org); err != nil {
-				return err
+				return nil, err
 			}
 			minfo := new(UserInfo)
 			minfo.Username = member.MemberName
@@ -438,26 +438,26 @@ func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (err erro
 				return
 			} else {
 				minfo = minfo.DeleteOrgFromList(orgID)
-				return minfo.Update()
+				return org, minfo.Update()
 			}
 		}
 	}
 
 	return
 }
-func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (err error) {
+func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (org *Orgnazition, err error) {
 	if user.Username == member.MemberName {
-		return errors.New("can't privilege yourself.")
+		return nil, errors.New("can't privilege yourself.")
 	}
-	org := new(Orgnazition)
+	org = new(Orgnazition)
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			return errors.New("permission denied.")
+			return nil, errors.New("permission denied.")
 		}
 
 		if !org.IsMemberExist(member) {
-			return errors.New("can't find such username in this orgnazition.")
+			return nil, errors.New("can't find such username in this orgnazition.")
 		}
 
 		for idx, oldMember := range org.MemberList {
@@ -482,7 +482,7 @@ func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (err error) 
 				}
 			}
 		}
-		return errors.New("no such user.")
+		return nil, errors.New("no such user.")
 	}
 	return
 }

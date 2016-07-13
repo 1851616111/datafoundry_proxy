@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/golang/glog"
 	"github.com/julienschmidt/httprouter"
 	"net/http"
@@ -13,32 +14,37 @@ func Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	r.ParseForm()
 	switch r.Method {
 	case "GET":
 		if userProfile, err := getProfile(username); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			RespError(w, err.Error(), http.StatusInternalServerError)
 		} else {
-			glog.Infoln(userProfile)
-			http.Error(w, userProfile.(string), http.StatusOK)
+
+			user := new(UserInfo)
+			if err = json.Unmarshal([]byte(userProfile.(string)), user); err != nil {
+				glog.Error(err)
+			}
+			glog.Infoln(user)
+			RespOK(w, user)
 		}
 	case "PUT":
 		glog.Infoln("put called..")
 		usr := new(UserInfo)
 		if err := parseRequestBody(r, usr); err != nil {
 			glog.Error("read request body error.", err)
-			http.Error(w, err.Error(), 422)
+			RespError(w, err.Error(), http.StatusBadRequest)
 		} else {
 			if usr.Username != username {
-				http.Error(w, "", http.StatusBadRequest)
+				RespError(w, "Can't change username.", http.StatusBadRequest)
 			}
 			if err = usr.Update(); err != nil {
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				RespError(w, err.Error(), http.StatusBadRequest)
 			} else {
-				http.Error(w, "", http.StatusOK)
+				RespOK(w, usr)
 			}
 		}
 

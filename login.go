@@ -37,14 +37,14 @@ func Login(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			}
 
 		} else {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			RespError(w, "unauthorized", http.StatusUnauthorized)
 		}
 	case "OPTIONS":
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Authorization")
 		w.WriteHeader(http.StatusNoContent)
 	default:
-		http.Error(w, "method not allowd.", http.StatusMethodNotAllowed)
+		RespError(w, "method not allowd.", http.StatusMethodNotAllowed)
 	}
 
 }

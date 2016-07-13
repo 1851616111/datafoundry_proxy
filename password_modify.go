@@ -14,16 +14,18 @@ func PasswordModify(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	var username string
 	var err error
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	password := new(Password)
 	if err := parseRequestBody(r, password); err != nil {
 		glog.Error("read request body error.", err)
-		http.Error(w, "", http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
 		if err = password.Modify(username); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			RespError(w, err.Error(), http.StatusBadRequest)
+		} else {
+			RespOK(w, nil)
 		}
 	}
 }

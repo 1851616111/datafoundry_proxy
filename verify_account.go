@@ -12,7 +12,7 @@ func VerifyAccount(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	r.ParseForm()
 	token := ps.ByName("token")
 	if len(token) == 0 {
-		http.Error(w, "invalid token.", http.StatusBadRequest)
+		RespError(w, "invalid token.", http.StatusBadRequest)
 		return
 	}
 	user, err := dbstore.GetValue(etcdGeneratePath(ETCDUserVerify, token))
@@ -22,16 +22,17 @@ func VerifyAccount(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(VerifyFail))
+
 		} else {
 			glog.Error(err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			RespError(w, err.Error(), http.StatusInternalServerError)
 		}
 		return
 	}
 
 	if err = activeAccount(user.(string), token); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespError(w, err.Error(), http.StatusInternalServerError)
 	} else {
 		w.Header().Set("Content-Type", "text/html")
 		w.WriteHeader(http.StatusOK)

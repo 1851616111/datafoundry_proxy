@@ -17,11 +17,11 @@ var (
 
 func (m *mux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	http.Error(w, "", http.StatusNotFound)
+	RespError(w, "", http.StatusNotFound)
 }
 
 func Forbidden(w http.ResponseWriter, _ *http.Request, _ httprouter.Params) {
-	http.Error(w, "", http.StatusForbidden)
+	RespError(w, "", http.StatusForbidden)
 }
 
 func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

@@ -10,7 +10,7 @@ import (
 
 func DeleteOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	http.Error(w, "delete not implentmented.", http.StatusNotImplemented)
+	RespError(w, "delete not implentmented.", http.StatusNotImplemented)
 }
 
 func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -19,14 +19,14 @@ func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	user := &UserInfo{Username: username}
 	if user, err = user.Get(); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -39,9 +39,9 @@ func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
-		http.Error(w, "", http.StatusOK)
+		RespOK(w, nil)
 	}
 }
 
@@ -51,14 +51,14 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	user := &UserInfo{Username: username}
 	if user, err = user.Get(); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -68,7 +68,7 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	glog.Infof("action: %s,orgID: %s", action, orgID)
 
 	if !user.CheckIfOrgExistByID(orgID) {
-		http.Error(w, "no such organization", http.StatusNotFound)
+		RespError(w, "no such organization", http.StatusNotFound)
 		return
 	}
 
@@ -76,9 +76,9 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 
 	if err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
-		http.Error(w, "", http.StatusOK)
+		RespOK(w, nil)
 	}
 
 	return
@@ -91,22 +91,21 @@ func ListOrganizations(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if orgs, err := userinfo.ListOrgs(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
-		resp, _ := json.Marshal(orgs)
-		http.Error(w, string(resp), http.StatusOK)
+		RespOK(w, orgs)
 	}
 	return
 
@@ -119,47 +118,42 @@ func CreateOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	org := new(Orgnazition)
 	if err := parseRequestBody(r, org); err != nil {
 
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if len(org.Name) < 2 {
 
-		http.Error(w, "organization name is too short.", http.StatusBadRequest)
+		RespError(w, "Organization name is too short.", http.StatusBadRequest)
 		return
 	}
 
 	if userinfo.CheckIfOrgExist(org.Name) {
-		http.Error(w, "organization name already exist.", http.StatusBadRequest)
+		RespError(w, "Organization name already exist.", http.StatusBadRequest)
 		return
 	}
 	userinfo.token, _ = checkToken(r)
 	if org, err = userinfo.CreateOrg(org); err != nil {
 
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
-		if resp, err := json.Marshal(org); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			http.Error(w, string(resp), http.StatusOK)
-		}
-		return
+		RespOK(w, org)
 	}
+	return
 
 }
 
@@ -169,20 +163,20 @@ func GetOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	orgID := ps.ByName("org")
 	if !userinfo.CheckIfOrgExistByID(orgID) {
-		http.Error(w, "no such organization", http.StatusNotFound)
+		RespError(w, "No such organization", http.StatusNotFound)
 		return
 	}
 
@@ -190,10 +184,9 @@ func GetOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	orgnazition.ID = orgID
 
 	if orgnazition, err = orgnazition.Get(); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
-		resp, _ := json.Marshal(orgnazition)
-		http.Error(w, string(resp), http.StatusOK)
+		RespOK(w, orgnazition)
 	}
 	return
 }
@@ -204,14 +197,14 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	user := &UserInfo{Username: username}
 	if user, err = user.Get(); err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -231,41 +224,41 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	if !user.CheckIfOrgExistByID(orgID) {
-		http.Error(w, "no such organization", http.StatusNotFound)
+		RespError(w, "No such organization", http.StatusNotFound)
 		return
 	}
 
 	member := new(OrgMember)
 	if err := parseRequestBody(r, member); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	var org *Orgnazition
 	switch action {
 	case "remove":
 
-		err = user.OrgRemoveMember(member, orgID)
+		org, err = user.OrgRemoveMember(member, orgID)
 	case "invite":
 
-		var org *Orgnazition
 		org, err = user.OrgInvite(member, orgID)
 		if err == nil {
 			go SendOrgInviteMessage(member.MemberName, username, orgID, org.Name)
 		}
 	case "privileged":
 
-		err = user.OrgPrivilege(member, orgID)
+		org, err = user.OrgPrivilege(member, orgID)
 	default:
-		http.Error(w, "not supported action", http.StatusBadRequest)
+		RespError(w, "Not supported action", http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
 		glog.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 		return
 	} else {
-		http.Error(w, "", http.StatusOK)
+		RespOK(w, org)
 		return
 
 	}
