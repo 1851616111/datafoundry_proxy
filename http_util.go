@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/golang/glog"
 	"io/ioutil"
@@ -162,4 +163,32 @@ func retHttpCodeJson(code int, bodyCode int, w http.ResponseWriter, a ...interfa
 
 	fmt.Fprintf(w, msg)
 	return
+}
+
+func RespError(w http.ResponseWriter, msg string, errCode int) {
+	resp := new(APIResponse)
+
+	resp.Code = errCode
+	resp.Message = msg
+	resp.Status = http.StatusText(errCode)
+
+	if body, err := json.MarshalIndent(resp, "", "  "); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(errCode)
+		w.Write(body)
+	}
+
+}
+
+func RespOK(w http.ResponseWriter, data interface{}) {
+
+	if body, err := json.MarshalIndent(data, "", "  "); err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	} else {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(body)
+	}
 }

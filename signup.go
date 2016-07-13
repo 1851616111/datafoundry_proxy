@@ -13,22 +13,22 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	usr := new(UserInfo)
 	if err := parseRequestBody(r, usr); err != nil {
 		glog.Error("read request body error.", err)
-		http.Error(w, "", http.StatusBadRequest)
+		RespError(w, err.Error(), http.StatusBadRequest)
 	} else {
 		glog.Infof("%+v", usr)
 		if err := usr.Validate(); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			RespError(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if exist, err := usr.IfExist(); !exist && err == nil {
 
-			if err = usr.Create(); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+			if usr, err = usr.Create(); err != nil {
+				RespError(w, err.Error(), http.StatusInternalServerError)
 			} else {
 				if usr.Status.FromLdap {
-					http.Error(w, "user already exist on ldap.", 422)
+					RespError(w, "user already exist on ldap.", http.StatusAccepted)
 				} else {
-					http.Error(w, "", http.StatusOK)
+					RespOK(w, usr)
 
 					go func() {
 						if err := usr.SendVerifyMail(); err != nil {
@@ -38,9 +38,9 @@ func SignUp(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 				}
 			}
 		} else if exist {
-			http.Error(w, "user is already exist.", http.StatusConflict)
+			RespError(w, "user already exist.", http.StatusConflict)
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			RespError(w, err.Error(), http.StatusInternalServerError)
 		}
 	}
 }

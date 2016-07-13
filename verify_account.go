@@ -77,7 +77,7 @@ var VerifySuccess string = `<!DOCTYPE html>
             <p style="padding: 20px 0 50px 0; font-size: 14px; color: #5a6378;">您的帐号已完成激活。</p>
         </div>
         <div class="bottom">
-            <a  href="/login" class="login" type="button" style="text-decoration:none">登录</a>
+            <a  href="/#/login" class="login" type="button" style="text-decoration:none">登录</a>
         </div>
     </div>
     <div style="margin:0 auto; padding-top: 30px; padding-bottom: 30px; width: 460px; position:relative">
@@ -134,7 +134,7 @@ var VerifyFail string = `<!DOCTYPE html>
         <p style="margin-left:10px; padding: 7px 0 50px 0; font-size: 14px; color: #5a6378; ">链接超过24小时已失效, <br>请登录系统重新发送验证邮件。</p>
     </div>
     <div class="bottom">
-        <a class="login" type="button" href="/login" style="text-decoration:none">登录</a>
+        <a class="login" type="button" href="/#/login" style="text-decoration:none">登录</a>
     </div>
 </div>
 <div style="margin:0 auto; padding-top: 25px; padding-bottom: 30px; width: 460px; position:relative">

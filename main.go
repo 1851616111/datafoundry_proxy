@@ -34,7 +34,7 @@ func main() {
 	router.GET("/hello/:name", Hello)
 
 	//users
-	router.GET("/lapi/authenticity_token", Hello)
+	//router.GET("/lapi/authenticity_token", Hello)
 	router.GET("/lapi/login", Login)
 	router.GET("/login", Login)
 	router.POST("/lapi/signup", SignUp)

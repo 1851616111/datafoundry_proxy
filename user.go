@@ -49,11 +49,11 @@ func (usr *UserInfo) Validate() error {
 	return nil
 }
 
-func (usr *UserInfo) Create() error {
+func (usr *UserInfo) Create() (*UserInfo, error) {
 	if err := usr.AddToLdap(); err != nil {
 		if !checkIfExistldap(err) {
 			glog.Fatal(err)
-			return err
+			return usr, err
 		} else {
 			glog.Infof("user %s already exist on ldap.", usr.Username)
 			usr.Status.FromLdap = true
@@ -173,8 +173,8 @@ func (user *UserInfo) UpdateRoleBinding(org *Orgnazition) (err error) {
 
 	var e error
 	reason := make(chan error, 2)
-	go user.OpenshiftUpdateResouce(AdminRoleUrl, AdminRole, reason)
-	go user.OpenshiftUpdateResouce(EditRoleUrl, EditRole, reason)
+	user.OpenshiftUpdateRole(AdminRoleUrl, AdminRole, reason)
+	user.OpenshiftUpdateRole(EditRoleUrl, EditRole, reason)
 	e = <-reason
 	if e != nil {
 		err = e
@@ -187,19 +187,28 @@ func (user *UserInfo) UpdateRoleBinding(org *Orgnazition) (err error) {
 	return
 }
 
-func (user *UserInfo) OpenshiftUpdateResouce(url string, resource interface{}, reason chan error) {
-	if reqbody, err := json.Marshal(resource); err != nil {
+func (user *UserInfo) OpenshiftUpdateRole(url string, role *oapi.RoleBinding, reason chan error) {
+	oldRole := new(oapi.RoleBinding)
+	method := "PUT"
+	if reqbody, err := json.Marshal(role); err != nil {
 		glog.Error(err)
 		reason <- err
 	} else {
-		httpDelete(url, "Authorization", user.token)
-		url = splitLastSlash(url)
+		if b, err := httpGet(url, "Authorization", user.token); err == nil {
+			err = json.Unmarshal(b, oldRole)
+			role.ResourceVersion = oldRole.ResourceVersion
+			reqbody, _ = json.Marshal(role)
+		} else {
+			httpDelete(url, "Authorization", user.token)
+			url = splitLastSlash(url)
+			method = "POST"
+		}
 
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := &http.Client{Transport: tr}
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqbody))
+		req, _ := http.NewRequest(method, url, bytes.NewBuffer(reqbody))
 		req.Header.Set("Authorization", user.token)
 		//log.Println(req.Header, bearer)
 
@@ -482,8 +491,8 @@ func (usr *UserInfo) Update() error {
 	return dbstore.SetValue(etcdProfilePath(usr.Username), usr, false)
 }
 
-func (usr *UserInfo) AddToEtcd() error {
-	pass := usr.Password
+func (usr *UserInfo) AddToEtcd() (*UserInfo, error) {
+
 	usr.Password = ""
 	usr.Status.Phase = UserStatusInactive
 	usr.Status.Active = false
@@ -491,8 +500,8 @@ func (usr *UserInfo) AddToEtcd() error {
 	usr.CreateTime = time.Now().Format(time.RFC3339)
 	usr.Status.Quota.OrgQuota = 1
 	err := dbstore.SetValue(etcdProfilePath(usr.Username), usr, false)
-	usr.Password = pass
-	return err
+
+	return usr, err
 }
 
 func (usr *UserInfo) AddToLdap() error {
