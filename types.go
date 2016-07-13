@@ -24,7 +24,10 @@ type UserStatus struct {
 	Quota       UserQuota       `json:"quota"`
 }
 
-type UserQuota struct{}
+type UserQuota struct {
+	OrgQuota int
+	OrgUsed  int
+}
 
 type UserStatusPhase string
 

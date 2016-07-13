@@ -12,8 +12,9 @@ import (
 	"io/ioutil"
 	kapi "k8s.io/kubernetes/pkg/api/v1"
 	"net/http"
+	"strings"
 	"time"
-	
+
 	"github.com/asiainfoLDP/datafoundry_proxy/messages"
 )
 
@@ -62,6 +63,9 @@ func (usr *UserInfo) Create() error {
 }
 
 func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error) {
+	if usr.Status.Quota.OrgUsed >= usr.Status.Quota.OrgQuota {
+		return nil, errors.New(fmt.Sprintf("user can only create %d orgnazition(s)", usr.Status.Quota.OrgQuota))
+	}
 	org.CreateTime = time.Now().Format(time.RFC3339)
 	org.CreateBy = usr.Username
 	org.ID = usr.Username + "-org-" + generatedOrgName(8)
@@ -86,6 +90,7 @@ func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error
 			// } else {
 			// 	usr.OrgList = []OrgBrief{orgbrief}
 			// }
+			usr.Status.Quota.OrgUsed += 1
 			if err = usr.Update(); err != nil {
 				glog.Error(err)
 				return nil, err
@@ -123,7 +128,12 @@ func (user *UserInfo) CreateProject(org *Orgnazition) (err error) {
 			b, _ := ioutil.ReadAll(resp.Body)
 			glog.Infoln(string(b))
 			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
-				return user.CreateRoleBinding(org)
+				err = user.CreateRoleBinding(org, "admin")
+				if err == nil {
+					return user.CreateRoleBinding(org, "edit")
+				} else {
+					return err
+				}
 			} else {
 				return errors.New(string(b))
 			}
@@ -137,14 +147,14 @@ func (user *UserInfo) UpdateRoleBinding(org *Orgnazition) (err error) {
 	glog.Infoln("create project role...", user.token)
 
 	glog.Infoln(user)
-	AdminRoleUrl := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings/admin"
+	AdminRoleUrl := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings/admin-" + org.CreateBy
 	EditRoleUrl := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings/" + "edit-" + org.CreateBy
 
 	AdminRole := new(oapi.RoleBinding)
 	EditRole := new(oapi.RoleBinding)
 
 	AdminRole.RoleRef = kapi.ObjectReference{Name: "admin"}
-	AdminRole.Name = "admin"
+	AdminRole.Name = "admin-" + org.CreateBy
 
 	EditRole.RoleRef = kapi.ObjectReference{Name: "edit"}
 	EditRole.Name = "edit-" + org.CreateBy
@@ -177,16 +187,19 @@ func (user *UserInfo) UpdateRoleBinding(org *Orgnazition) (err error) {
 	return
 }
 
-func (user *UserInfo) OpenshiftUpdateResouce(url string, resource interface{}, reason chan error) (err error) {
+func (user *UserInfo) OpenshiftUpdateResouce(url string, resource interface{}, reason chan error) {
 	if reqbody, err := json.Marshal(resource); err != nil {
 		glog.Error(err)
+		reason <- err
 	} else {
+		httpDelete(url, "Authorization", user.token)
+		url = splitLastSlash(url)
 
 		tr := &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}
 		client := &http.Client{Transport: tr}
-		req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(reqbody))
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqbody))
 		req.Header.Set("Authorization", user.token)
 		//log.Println(req.Header, bearer)
 
@@ -202,20 +215,29 @@ func (user *UserInfo) OpenshiftUpdateResouce(url string, resource interface{}, r
 				err = errors.New(string(b))
 			}
 		}
+		reason <- err
 	}
-	reason <- err
+
 	return
 }
 
-func (user *UserInfo) CreateRoleBinding(org *Orgnazition) (err error) {
+func splitLastSlash(url string) string {
+	n := strings.LastIndex(url, "/")
+	if n < 0 {
+		return url
+	}
+	return url[:n]
+}
+
+func (user *UserInfo) CreateRoleBinding(org *Orgnazition, role string) (err error) {
 	glog.Infoln("create project role...", user.token)
 
 	glog.Infoln(user)
 	rolebinding_url := DF_HOST + "/oapi/v1/namespaces/" + org.ID + "/rolebindings"
 
 	rolebinding := new(oapi.RoleBinding)
-	rolebinding.Name = "edit-" + user.Username
-	rolebinding.RoleRef = kapi.ObjectReference{Name: "edit"}
+	rolebinding.Name = role + "-" + user.Username
+	rolebinding.RoleRef = kapi.ObjectReference{Name: role}
 	if reqbody, err := json.Marshal(rolebinding); err != nil {
 		glog.Error(err)
 	} else {
@@ -398,7 +420,7 @@ func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (err erro
 			return err
 		} else {
 			if err = user.UpdateRoleBinding(org); err != nil {
-				return
+				return err
 			}
 			minfo := new(UserInfo)
 			minfo.Username = member.MemberName
@@ -467,6 +489,7 @@ func (usr *UserInfo) AddToEtcd() error {
 	usr.Status.Active = false
 	usr.Status.Initialized = false
 	usr.CreateTime = time.Now().Format(time.RFC3339)
+	usr.Status.Quota.OrgQuota = 1
 	err := dbstore.SetValue(etcdProfilePath(usr.Username), usr, false)
 	usr.Password = pass
 	return err

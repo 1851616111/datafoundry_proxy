@@ -150,7 +150,7 @@ func CreateOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	userinfo.token, _ = checkToken(r)
 	if org, err = userinfo.CreateOrg(org); err != nil {
 
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	} else {
 		if resp, err := json.Marshal(org); err != nil {
@@ -246,7 +246,7 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 		err = user.OrgRemoveMember(member, orgID)
 	case "invite":
-		
+
 		var org *Orgnazition
 		org, err = user.OrgInvite(member, orgID)
 		if err == nil {

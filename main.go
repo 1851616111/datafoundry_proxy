@@ -5,7 +5,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"log"
 	"net/http"
-	
+
 	"github.com/asiainfoLDP/datafoundry_proxy/messages"
 )
 
@@ -44,9 +44,9 @@ func main() {
 	router.POST("/lapi/send_verify_email", Hello)
 	router.GET("/verify_account/:token", VerifyAccount)
 
-	router.GET("/lapi/inbox", GetMessages)       //get msgs
-	router.GET("/lapi/inbox_stat", GetMessageStat)       //get msgs
-	router.PUT("/lapi/inbox/:id", ModifyMessage) //mark msg as read.
+	router.GET("/lapi/inbox", GetMessages)          //get msgs
+	router.GET("/lapi/inbox_stat", GetMessageStat)  //get msgs
+	router.PUT("/lapi/inbox/:id", ModifyMessage)    //mark msg as read.
 	router.DELETE("/lapi/inbox/:id", DeleteMessage) //mark msg as read.
 	//organizations
 	router.GET("/lapi/orgs", ListOrganizations)
@@ -60,9 +60,9 @@ func main() {
 	// router.PUT("/lapi/orgs/:org/remove", ManageOrganization)     //
 	// router.PUT("/lapi/orgs/:org/privileged", ManageOrganization) //
 	//action=privileged,remove,
-	
-	messages.Init(/*router, */MysqlEnv, nil/*KafkaEnv*/, EmailEnv)
-	
+
+	go messages.Init( /*router, */ MysqlEnv, nil /*KafkaEnv*/, EmailEnv)
+
 	router.NotFound = &mux{}
 
 	log.Fatal(http.ListenAndServe(":9090", router))
@@ -76,7 +76,6 @@ func main() {
 func init() {
 	dbinit(new(Etcd))
 }
-
 
 func dbinit(driver DBStorage) {
 	dbstore, _ = driver.Init()
