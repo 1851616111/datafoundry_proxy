@@ -606,6 +606,7 @@ func (user *UserInfo) InitUserProject(token string) (err error) {
 
 	project := new(oapi.ProjectRequest)
 	project.Name = user.Username
+	project.DisplayName = user.Username
 	if reqbody, err := json.Marshal(project); err != nil {
 		glog.Error(err)
 	} else {
