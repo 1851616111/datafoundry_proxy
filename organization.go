@@ -8,9 +8,38 @@ import (
 	"time"
 )
 
-func DeleteOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func DeleteOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	glog.Infoln("from", r.RemoteAddr, r.Method, r.URL.RequestURI(), r.Proto)
-	RespError(w, "delete not implentmented.", http.StatusNotImplemented)
+	var username string
+	var err error
+
+	if username, err = authedIdentities(r); err != nil {
+		RespError(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	userinfo := &UserInfo{Username: username}
+	if userinfo, err = userinfo.Get(); err != nil {
+		glog.Error(err)
+		RespError(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	orgID := ps.ByName("org")
+	if !userinfo.CheckIfOrgExistByID(orgID) {
+		RespError(w, "No such organization", http.StatusNotFound)
+		return
+	}
+
+	userinfo.token, _ = checkToken(r)
+	org := new(Orgnazition)
+	if org, err = userinfo.DeleteOrg(orgID); err != nil {
+
+		RespError(w, err.Error(), http.StatusBadRequest)
+	} else {
+		RespOK(w, org)
+	}
+
 }
 
 func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -277,6 +306,12 @@ func (o *Orgnazition) Get() (org *Orgnazition, err error) {
 	}
 	return org, nil
 
+}
+func (o *Orgnazition) Delete() (err error) {
+	if err = dbstore.Delete(etcdOrgPath(o.ID), false); err != nil {
+		glog.Error(err)
+	}
+	return
 }
 
 func (o *Orgnazition) Update() (org *Orgnazition, err error) {

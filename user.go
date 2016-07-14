@@ -62,6 +62,46 @@ func (usr *UserInfo) Create() (*UserInfo, error) {
 	return usr.AddToEtcd()
 }
 
+func (user *UserInfo) DeleteOrg(orgID string) (org *Orgnazition, err error) {
+	org = new(Orgnazition)
+	org.ID = orgID
+	if org, err = org.Get(); err == nil {
+		if !org.IsAdmin(user.Username) {
+			err = errors.New("permission denied.")
+			return
+		}
+		if len(org.MemberList) > 1 {
+			err = errors.New("members still in orgnazition.")
+			return
+		}
+		creater := org.CreateBy
+		if err = user.OpenshiftDeleteProject(org); err != nil {
+			glog.Error(err)
+		} else {
+			user = user.DeleteOrgFromList(orgID)
+			if err = user.Update(); err != nil {
+				glog.Error(err)
+			} else {
+				if userProfile, errs := getProfile(creater); err != nil {
+					glog.Error(errs)
+				} else {
+
+					createrinfo := new(UserInfo)
+					if err = json.Unmarshal([]byte(userProfile.(string)), createrinfo); err != nil {
+						glog.Error(err)
+					} else {
+						createrinfo.Status.Quota.OrgUsed -= 1
+						createrinfo.Update()
+						org.Delete()
+					}
+
+				}
+			}
+		}
+	}
+	return
+}
+
 func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error) {
 	if usr.Status.Quota.OrgUsed >= usr.Status.Quota.OrgQuota {
 		return nil, errors.New(fmt.Sprintf("user can only create %d orgnazition(s)", usr.Status.Quota.OrgQuota))
@@ -187,6 +227,11 @@ func (user *UserInfo) UpdateRoleBinding(org *Orgnazition) (err error) {
 	return
 }
 
+func (user *UserInfo) OpenshiftDeleteProject(org *Orgnazition) (err error) {
+	ProjectUrl := DF_HOST + "/oapi/v1/projects/" + org.ID
+	_, err = httpDelete(ProjectUrl, "Authorization", user.token)
+	return err
+}
 func (user *UserInfo) OpenshiftUpdateRole(url string, role *oapi.RoleBinding, reason chan error) {
 	oldRole := new(oapi.RoleBinding)
 	method := "PUT"
