@@ -1,11 +1,5 @@
 package main
 
-import (
-
-)
-
-
-
 var bccEmail []string = []string{
 	"chaizs@asiainfo.com",
 	"jingxy3@asiainfo.com",
@@ -51,7 +45,7 @@ var Message string = `<body style="background-color: #e6e9f2">
         <div style="margin:0 auto; padding-top: 30px; padding-bottom: 35px; width: 540px; position:relative">
             <div class="line">
             </div>
-            <img id="footer" src="https://lab.dataos.io/pub/img/mail_logo_small.png" style="background-color: #e6e9f2; position: absolute; top: 15px; left:45%; height: 30px; width:30px; z-index: 5; padding: 0px 10px;">
+            <img id="footer" src="https://lab.dataos.io/pub/img/mail_logo_small.png">
         </div>
     </div>
 
@@ -66,5 +60,15 @@ var Message string = `<body style="background-color: #e6e9f2">
     .line {
         width:100%;
         border-bottom: 1px solid #c9d0e2;
+    }
+    #footer {
+        background-color: #e6e9f2;
+        position: absolute;
+        top: 15px;
+        left:45%;
+        height: 30px;
+        width:30px;
+        z-index: 5;
+        padding: 0px 10px;
     }
 </style>`

@@ -141,7 +141,7 @@ var VerifyFail string = `<!DOCTYPE html>
 <div style="margin:0 auto; padding-top: 25px; padding-bottom: 30px; width: 460px; position:relative">
     <div class="line">
     </div>
-    <img id="footer" src="/pub/img/mail_logo_small.png" style="">
+    <img id="footer" src="/pub/img/mail_logo_small.png">
 </div>
 </body>
 <style>
