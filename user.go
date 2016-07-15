@@ -344,6 +344,12 @@ func (usr *UserInfo) DeleteOrgFromList(orgID string) *UserInfo {
 }
 
 func (usr *UserInfo) AddOrgToList(org *Orgnazition) *UserInfo {
+
+	for _, b := range usr.OrgList {
+		if org.ID == b.OrgID {
+			return usr
+		}
+	}
 	orgbrief := new(OrgBrief)
 	orgbrief.OrgID = org.ID
 	orgbrief.OrgName = org.Name
@@ -387,13 +393,8 @@ func (user *UserInfo) OrgLeave(orgID string) (err error) {
 			glog.Error(err)
 			return err
 		} else {
-			if user, err = user.Get(); err != nil {
-				glog.Error(err)
-				return
-			} else {
-				user = user.DeleteOrgFromList(orgID)
-				return user.Update()
-			}
+			user = user.DeleteOrgFromList(orgID)
+			return user.Update()
 		}
 	}
 
