@@ -386,7 +386,7 @@ func (user *UserInfo) OrgLeave(orgID string) (err error) {
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if org.IsLastAdmin(user.Username) {
-			return errors.New("orgnazition needs at least one admin.")
+			return errors.New("The last admin can't leave.")
 		}
 		org = org.RemoveMember(user.Username)
 		if _, err = org.Update(); err != nil {
