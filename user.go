@@ -332,7 +332,9 @@ func (usr *UserInfo) CheckIfOrgExist(orgName string) bool {
 }
 
 func (usr *UserInfo) DeleteOrgFromList(orgID string) *UserInfo {
+	glog.Infoln(usr)
 	for idx, org := range usr.OrgList {
+		glog.Infoln(usr)
 		if org.OrgID == orgID {
 			usr.OrgList = append(usr.OrgList[:idx], usr.OrgList[idx+1:]...)
 			return usr
