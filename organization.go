@@ -359,6 +359,15 @@ func (o *Orgnazition) IsMemberExist(member *OrgMember) bool {
 	return false
 }
 
+func (o *Orgnazition) MemberStatus(member *OrgMember) MemberStatusPhase {
+	for _, v := range o.MemberList {
+		if v.MemberName == member.MemberName {
+			return v.Status
+		}
+	}
+	return OrgMemberStatusNone
+}
+
 func (o *Orgnazition) RemoveMember(member string) *Orgnazition {
 	for idx, v := range o.MemberList {
 		if v.MemberName == member {

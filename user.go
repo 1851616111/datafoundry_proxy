@@ -431,7 +431,10 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnaziti
 			return
 		}
 		if org.IsMemberExist(member) {
-			err = errors.New("user is already in the orgnazition.")
+			if org.MemberStatus(member)==OrgMemberStatusjoined{
+				err = errors.New("user is already invited.")
+			}else{
+			err = errors.New("user is already in the orgnazition.")}
 			return
 		}
 		minfo := new(UserInfo)

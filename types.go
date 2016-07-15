@@ -69,6 +69,7 @@ type MemberStatusPhase string
 const (
 	OrgMemberStatusInvited MemberStatusPhase = "invited"
 	OrgMemberStatusjoined  MemberStatusPhase = "joined"
+	OrgMemberStatusNone    MemberStatusPhase = "none"
 )
 
 type OrgStatusPhase string
