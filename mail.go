@@ -34,7 +34,7 @@ var Message string = `<body style="background-color: #e6e9f2">
             <div class="buttom" style=" width:540px;">
                 <div style="padding: 30px 30px; background-color: #f7f8fb;">
                     <img src="https://lab.dataos.io/pub/img/mail_qrcode.png">
-                    <div style="padding-top: 0px; width:50%; color: #000000;display: inline-block; margin-left: 20px; font-size: 12px">
+                    <div style="padding-top: 0px; width:50%%; color: #000000;display: inline-block; margin-left: 20px; font-size: 12px">
                         <p style="; ">扫一扫</p>
                         <p style="margin-top: 10px">了解最新产品和咨询</p>
                         <p style="margin-top: 20px; color: #ef9033">铸数工坊公众号</p>
@@ -58,14 +58,14 @@ var Message string = `<body style="background-color: #e6e9f2">
         background-color: #f8b551;
     }
     .line {
-        width:100%;
+        width:100%%;
         border-bottom: 1px solid #c9d0e2;
     }
     #footer {
         background-color: #e6e9f2;
         position: absolute;
         top: 15px;
-        left:45%;
+        left:45%%;
         height: 30px;
         width:30px;
         z-index: 5;
