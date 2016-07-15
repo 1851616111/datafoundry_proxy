@@ -431,10 +431,11 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnaziti
 			return
 		}
 		if org.IsMemberExist(member) {
-			if org.MemberStatus(member)==OrgMemberStatusjoined{
+			if org.MemberStatus(member) == OrgMemberStatusjoined {
 				err = errors.New("user is already invited.")
-			}else{
-			err = errors.New("user is already in the orgnazition.")}
+			} else {
+				err = errors.New("user is already in the orgnazition.")
+			}
 			return
 		}
 		minfo := new(UserInfo)
@@ -494,9 +495,9 @@ func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (org *Org
 	return
 }
 func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (org *Orgnazition, err error) {
-	if user.Username == member.MemberName {
-		return nil, errors.New("can't privilege yourself.")
-	}
+	// if user.Username == member.MemberName {
+	// 	return nil, errors.New("can't privilege yourself.")
+	// }
 	org = new(Orgnazition)
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
