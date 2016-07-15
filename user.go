@@ -335,6 +335,7 @@ func (usr *UserInfo) DeleteOrgFromList(orgID string) *UserInfo {
 	for idx, org := range usr.OrgList {
 		if org.OrgID == orgID {
 			usr.OrgList = append(usr.OrgList[:idx], usr.OrgList[idx+1:]...)
+			return usr
 		}
 	}
 	return usr
