@@ -505,6 +505,10 @@ func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (org *Orgnaz
 			return nil, errors.New("permission denied.")
 		}
 
+		if org.IsLastAdmin(user.Username) {
+			return nil, errors.New("orgnazition needs at least one admin.")
+		}
+
 		if !org.IsMemberExist(member) {
 			return nil, errors.New("can't find such username in this orgnazition.")
 		}
