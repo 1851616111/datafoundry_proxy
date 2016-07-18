@@ -359,6 +359,16 @@ func (o *Orgnazition) IsMemberExist(member *OrgMember) bool {
 	return false
 }
 
+func (o *Orgnazition) JoinedMemberCnt() int {
+	cnt := 0
+	for _, v := range o.MemberList {
+		if v.Status == OrgMemberStatusjoined {
+			cnt += 1
+		}
+	}
+	return cnt
+}
+
 func (o *Orgnazition) MemberStatus(member *OrgMember) MemberStatusPhase {
 	for _, v := range o.MemberList {
 		if v.MemberName == member.MemberName {

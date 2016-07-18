@@ -70,7 +70,7 @@ func (user *UserInfo) DeleteOrg(orgID string) (org *Orgnazition, err error) {
 			err = errors.New("permission denied.")
 			return
 		}
-		if len(org.MemberList) > 1 {
+		if org.JoinedMemberCnt() > 1 {
 			err = errors.New("members still in orgnazition.")
 			return
 		}
