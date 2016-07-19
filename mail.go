@@ -15,7 +15,7 @@ var Message string = `<body style="background-color: #e6e9f2">
         <div class="sendemail" style="margin:auto; background-color: white; width: 540px;">
             <div style="padding: 30px 30px">
                 <div class="headLogo">
-                    <img src="https://lab.dataos.io/pub/img/mail_banner.png" >
+                    <img src="http://o9h84ok6f.bkt.clouddn.com/mail_banner.png_1468918176875.png" >
                 </div>
                 <div class="content" style="">
                     <p style="font-size: 16px; margin: 50px 0 15px 0px;color: #5a6378;">亲爱的 %s，感谢您注册<a style="font-size: 16px;color: #000000;">&nbsp;铸数工坊&nbsp;DataFoundry</a>。</p>
@@ -33,7 +33,7 @@ var Message string = `<body style="background-color: #e6e9f2">
 
             <div class="buttom" style=" width:540px;">
                 <div style="padding: 30px 30px; background-color: #f7f8fb;">
-                    <img src="https://lab.dataos.io/pub/img/mail_qrcode.png">
+                    <img src="http://o9h84ok6f.bkt.clouddn.com/mail_qrcode.png_1468918176894.png">
                     <div style="padding-top: 0px; width:50%%; color: #000000;display: inline-block; margin-left: 20px; font-size: 12px">
                         <p style="; ">扫一扫</p>
                         <p style="margin-top: 10px">了解最新产品和咨询</p>
@@ -45,7 +45,7 @@ var Message string = `<body style="background-color: #e6e9f2">
         <div style="margin:0 auto; padding-top: 30px; padding-bottom: 35px; width: 540px; position:relative">
             <div class="line">
             </div>
-            <img id="footer" src="https://lab.dataos.io/pub/img/mail_logo_small.png">
+            <img id="footer" src="http://o9h84ok6f.bkt.clouddn.com/mail_logo_small.png_1468918176890.png">
         </div>
     </div>
 
