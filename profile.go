@@ -14,14 +14,14 @@ func Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 	r.ParseForm()
 	switch r.Method {
 	case "GET":
 		if userProfile, err := getProfile(username); err != nil {
-			RespError(w, err.Error(), http.StatusInternalServerError)
+			RespError(w, err, http.StatusInternalServerError)
 		} else {
 
 			user := new(UserInfo)
@@ -36,13 +36,13 @@ func Profile(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		usr := new(UserInfo)
 		if err := parseRequestBody(r, usr); err != nil {
 			glog.Error("read request body error.", err)
-			RespError(w, err.Error(), http.StatusBadRequest)
+			RespError(w, err, http.StatusBadRequest)
 		} else {
 			if usr.Username != username {
-				RespError(w, "Can't change username.", http.StatusBadRequest)
+				RespError(w, ldpErrorNew(ErrCodeUserModifyNotAllowed), http.StatusBadRequest)
 			}
 			if err = usr.Update(); err != nil {
-				RespError(w, err.Error(), http.StatusBadRequest)
+				RespError(w, err, http.StatusBadRequest)
 			} else {
 				RespOK(w, usr)
 			}
@@ -65,7 +65,7 @@ func checkToken(r *http.Request) (string, bool) {
 func getProfile(user string) (etcdvalue interface{}, err error) {
 	glog.Info("user", user)
 	if len(user) == 0 {
-		return nil, ErrNotFound
+		return nil, ldpErrorNew(ErrCodeNotFound)
 	}
 
 	return dbstore.GetValue(etcdProfilePath(user))
@@ -74,7 +74,7 @@ func getProfile(user string) (etcdvalue interface{}, err error) {
 
 func authedIdentities(r *http.Request) (string, error) {
 	if token, ok := checkToken(r); !ok {
-		return "", ErrAuthorizedRequired
+		return "", ldpErrorNew(ErrCodeUnauthorized)
 	} else {
 		glog.Info(token)
 

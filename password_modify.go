@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"github.com/go-ldap/ldap"
 	"github.com/golang/glog"
@@ -14,16 +13,16 @@ func PasswordModify(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 	var username string
 	var err error
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 	password := new(Password)
 	if err := parseRequestBody(r, password); err != nil {
 		glog.Error("read request body error.", err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		if err = password.Modify(username); err != nil {
-			RespError(w, err.Error(), http.StatusBadRequest)
+			RespError(w, err, http.StatusBadRequest)
 		} else {
 			RespOK(w, nil)
 		}
@@ -32,10 +31,10 @@ func PasswordModify(w http.ResponseWriter, r *http.Request, _ httprouter.Params)
 
 func (p *Password) Modify(username string) error {
 	if len(p.NewPassword) == 0 || len(p.OldPassword) == 0 {
-		return errors.New("password can't be empty.")
+		return ldpErrorNew(ErrCodePasswordEmpty)
 	}
 	if len(p.NewPassword) > 12 || len(p.NewPassword) < 8 {
-		return errors.New("password length must be 8 to 12 characters.")
+		return ldpErrorNew(ErrCodePasswordLengthMismatch)
 	}
 
 	return p.ModifyPasswordLdap(username)

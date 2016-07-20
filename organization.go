@@ -14,20 +14,20 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	orgID := ps.ByName("org")
 	if !userinfo.CheckIfOrgExistByID(orgID) {
-		RespError(w, "No such organization", http.StatusNotFound)
+		RespError(w, ldpErrorNew(ErrCodeOrgNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -35,7 +35,7 @@ func DeleteOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	org := new(Orgnazition)
 	if org, err = userinfo.DeleteOrg(orgID); err != nil {
 
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		RespOK(w, org)
 	}
@@ -48,14 +48,14 @@ func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	user := &UserInfo{Username: username}
 	if user, err = user.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -68,7 +68,7 @@ func JoinOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		RespOK(w, nil)
 	}
@@ -80,14 +80,14 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	user := &UserInfo{Username: username}
 	if user, err = user.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -97,7 +97,7 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 	glog.Infof("action: %s,orgID: %s", action, orgID)
 
 	if !user.CheckIfOrgExistByID(orgID) {
-		RespError(w, "no such organization", http.StatusNotFound)
+		RespError(w, ldpErrorNew(ErrCodeOrgNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -105,7 +105,7 @@ func LeaveOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 
 	if err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		RespOK(w, nil)
 	}
@@ -120,19 +120,19 @@ func ListOrganizations(w http.ResponseWriter, r *http.Request, _ httprouter.Para
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	if orgs, err := userinfo.ListOrgs(); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		RespOK(w, orgs)
 	}
@@ -147,38 +147,38 @@ func CreateOrganization(w http.ResponseWriter, r *http.Request, _ httprouter.Par
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	org := new(Orgnazition)
 	if err := parseRequestBody(r, org); err != nil {
 
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	if len(org.Name) < 2 {
 
-		RespError(w, "Organization name is too short.", http.StatusBadRequest)
+		RespError(w, ldpErrorNew(ErrCodeOrgNameTooShort), http.StatusBadRequest)
 		return
 	}
 
 	if userinfo.CheckIfOrgExist(org.Name) {
-		RespError(w, "Organization name already exist.", http.StatusBadRequest)
+		RespError(w, ldpErrorNew(ErrCodeOrgExist), http.StatusBadRequest)
 		return
 	}
 	userinfo.token, _ = checkToken(r)
 	if org, err = userinfo.CreateOrg(org); err != nil {
 
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		RespOK(w, org)
 	}
@@ -192,20 +192,20 @@ func GetOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
 	orgID := ps.ByName("org")
 	if !userinfo.CheckIfOrgExistByID(orgID) {
-		RespError(w, "No such organization", http.StatusNotFound)
+		RespError(w, ldpErrorNew(ErrCodeOrgNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -213,7 +213,7 @@ func GetOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 	orgnazition.ID = orgID
 
 	if orgnazition, err = orgnazition.Get(); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 	} else {
 		RespOK(w, orgnazition)
 	}
@@ -226,14 +226,14 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 
 	user := &UserInfo{Username: username}
 	if user, err = user.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -253,13 +253,13 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	}
 
 	if !user.CheckIfOrgExistByID(orgID) {
-		RespError(w, "No such organization", http.StatusNotFound)
+		RespError(w, ldpErrorNew(ErrCodeOrgNotFound), http.StatusNotFound)
 		return
 	}
 
 	member := new(OrgMember)
 	if err := parseRequestBody(r, member); err != nil {
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
@@ -278,13 +278,13 @@ func ManageOrganization(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 		org, err = user.OrgPrivilege(member, orgID)
 	default:
-		RespError(w, "Not supported action", http.StatusBadRequest)
+		RespError(w, ldpErrorNew(ErrCodeActionNotSupport), http.StatusBadRequest)
 		return
 	}
 
 	if err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	} else {
 		RespOK(w, org)

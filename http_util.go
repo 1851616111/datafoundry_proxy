@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	etcd "github.com/coreos/etcd/client"
+	"github.com/go-ldap/ldap"
 	"github.com/golang/glog"
 	"io/ioutil"
 	"net/http"
@@ -40,7 +42,7 @@ func httpGet(url string, credential ...string) ([]byte, error) {
 		}
 		switch resp.StatusCode {
 		case 404:
-			return nil, ErrNotFound
+			return nil, ldpErrorNew(ErrCodeNotFound)
 		case 200:
 			return ioutil.ReadAll(resp.Body)
 		}
@@ -84,7 +86,7 @@ func httpGetFunc(url string, f func(resp *http.Response), credential ...string) 
 
 		switch resp.StatusCode {
 		case 404:
-			return nil, ErrNotFound
+			return nil, ldpErrorNew(ErrCodeNotFound)
 		case 200:
 			return ioutil.ReadAll(resp.Body)
 		}
@@ -165,14 +167,14 @@ func retHttpCodeJson(code int, bodyCode int, w http.ResponseWriter, a ...interfa
 	return
 }
 
-func RespError(w http.ResponseWriter, msg string, errCode int) {
-	resp := genRespJson(errCode, msg)
+func RespError(w http.ResponseWriter, err error, httpCode int) {
+	resp := genRespJson(httpCode, err)
 
 	if body, err := json.MarshalIndent(resp, "", "  "); err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	} else {
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(errCode)
+		w.WriteHeader(httpCode)
 		w.Write(body)
 	}
 
@@ -180,7 +182,7 @@ func RespError(w http.ResponseWriter, msg string, errCode int) {
 
 func RespOK(w http.ResponseWriter, data interface{}) {
 	if data == nil {
-		data = genRespJson(http.StatusOK, "")
+		data = genRespJson(http.StatusOK, nil)
 	}
 
 	if body, err := json.MarshalIndent(data, "", "  "); err != nil {
@@ -192,11 +194,38 @@ func RespOK(w http.ResponseWriter, data interface{}) {
 	}
 }
 
-func genRespJson(errCode int, msg string) *APIResponse {
+func genRespJson(httpCode int, err error) *APIResponse {
 	resp := new(APIResponse)
+	var msgCode int
+	var message string
 
-	resp.Code = errCode
-	resp.Message = msg
-	resp.Status = http.StatusText(errCode)
+	if err == nil {
+		msgCode = ErrCodeOK
+		message = ErrText(msgCode)
+	} else {
+		if e, ok := err.(*ldap.Error); ok {
+			msgCode = int(e.ResultCode)+2000
+			message = ldap.LDAPResultCodeMap[e.ResultCode]
+		} else if e, ok := err.(etcd.Error); ok {
+			msgCode = e.Code+3000
+			message = e.Message
+		} else if e, ok := err.(*etcd.Error); ok {
+			msgCode = e.Code+3000
+			message = e.Message
+		} else if e, ok := err.(LdpError); ok {
+			msgCode = e.Code
+			message = e.Message
+		} else if e, ok := err.(*LdpError); ok {
+			msgCode = e.Code
+			message = e.Message
+		} else {
+			msgCode = ErrCodeUnknownError
+			message = e.Error()
+		}
+	}
+
+	resp.Code = msgCode
+	resp.Message = message
+	resp.Status = http.StatusText(httpCode)
 	return resp
 }

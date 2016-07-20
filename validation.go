@@ -25,8 +25,8 @@ func ValidateEmail(email string) (bool, string) {
 
 }
 
-func ValidateUserName(name string, prefix bool) (bool, string) {
-	if ok, reason := MinimalNameRequirements(name, prefix); !ok {
+func ValidateUserName(name string) (bool, string) {
+	if ok, reason := MinimalNameRequirements(name); !ok {
 		return ok, reason
 	}
 
@@ -41,7 +41,7 @@ func ValidateUserName(name string, prefix bool) (bool, string) {
 	return true, ""
 }
 
-func MinimalNameRequirements(name string, prefix bool) (bool, string) {
+func MinimalNameRequirements(name string) (bool, string) {
 	for _, illegalName := range NameMayNotBe {
 		if name == illegalName {
 			return false, fmt.Sprintf(`name may not be %q`, illegalName)

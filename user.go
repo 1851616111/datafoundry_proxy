@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/go-ldap/ldap"
 	"github.com/golang/glog"
@@ -33,17 +32,17 @@ func (usr *UserInfo) IfExist() (bool, error) {
 }
 
 func (usr *UserInfo) Validate() error {
-	if ok, reason := ValidateUserName(usr.Username, false); !ok {
-		return errors.New(reason)
+	if ok, _ := ValidateUserName(usr.Username); !ok {
+		return ldpErrorNew(ErrCodeNameInvalide)
 	}
 
-	if ok, reason := ValidateEmail(usr.Email); !ok {
-		return errors.New(reason)
+	if ok, _ := ValidateEmail(usr.Email); !ok {
+		return ldpErrorNew(ErrCodeEmailInvalid)
 	}
 
 	if len(usr.Password) > 12 ||
 		len(usr.Password) < 8 {
-		return errors.New("password must be between 8 and 12 characters long.")
+		return ldpErrorNew(ErrCodePasswordLengthMismatch)
 	}
 
 	return nil
@@ -67,11 +66,11 @@ func (user *UserInfo) DeleteOrg(orgID string) (org *Orgnazition, err error) {
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			err = errors.New("permission denied.")
+			err = ldpErrorNew(ErrCodePermissionDenied)
 			return
 		}
 		if org.JoinedMemberCnt() > 1 {
-			err = errors.New("members still in orgnazition.")
+			err = ldpErrorNew(ErrCodeOrgNotEmpty)
 			return
 		}
 		creater := org.CreateBy
@@ -104,7 +103,8 @@ func (user *UserInfo) DeleteOrg(orgID string) (org *Orgnazition, err error) {
 
 func (usr *UserInfo) CreateOrg(org *Orgnazition) (neworg *Orgnazition, err error) {
 	if usr.Status.Quota.OrgUsed >= usr.Status.Quota.OrgQuota {
-		return nil, errors.New(fmt.Sprintf("user can only create %d orgnazition(s)", usr.Status.Quota.OrgQuota))
+		return nil, ldpErrorNew(ErrCodeQuotaExceeded)
+		//return nil, errors.New(fmt.Sprintf("user can only create %d orgnazition(s)", usr.Status.Quota.OrgQuota))
 	}
 	org.CreateTime = time.Now().Format(time.RFC3339)
 	org.CreateBy = usr.Username
@@ -175,7 +175,7 @@ func (user *UserInfo) CreateProject(org *Orgnazition) (err error) {
 					return err
 				}
 			} else {
-				return errors.New(string(b))
+				return ldpErrorNew(ErrCodeUnknownError)
 			}
 		}
 	}
@@ -266,7 +266,7 @@ func (user *UserInfo) OpenshiftUpdateRole(url string, role *oapi.RoleBinding, re
 			glog.Infoln(string(b))
 			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 			} else {
-				err = errors.New(string(b))
+				err = ldpErrorNew(ErrCodeUnknownError)
 			}
 		}
 		reason <- err
@@ -314,7 +314,7 @@ func (user *UserInfo) CreateRoleBinding(org *Orgnazition, role string) (err erro
 			if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 				return nil
 			} else {
-				return errors.New(string(b))
+				return ldpErrorNew(ErrCodeUnknownError)
 			}
 		}
 	}
@@ -386,7 +386,7 @@ func (user *UserInfo) OrgLeave(orgID string) (err error) {
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if org.IsLastAdmin(user.Username) {
-			return errors.New("The last admin can't leave.")
+			return ldpErrorNew(ErrCodeLastAdminRestricted)
 		}
 		org = org.RemoveMember(user.Username)
 		if _, err = org.Update(); err != nil {
@@ -431,14 +431,14 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnaziti
 	var ok bool
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			err = errors.New("permission denied.")
+			err = ldpErrorNew(ErrCodePermissionDenied)
 			return
 		}
 		if org.IsMemberExist(member) {
 			if org.MemberStatus(member) == OrgMemberStatusjoined {
-				err = errors.New("user is already invited.")
+				err = ldpErrorNew(ErrCodeUserInvited)
 			} else {
-				err = errors.New("user is already in the orgnazition.")
+				err = ldpErrorNew(ErrCodeUserExistsInOrg)
 			}
 			return
 		}
@@ -446,7 +446,7 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnaziti
 		minfo.Username = member.MemberName
 		if ok, err = minfo.IfExist(); !ok {
 			if err == nil {
-				err = errors.New("user not registered yet.")
+				err = ldpErrorNew(ErrCodeUserNotRegistered)
 			}
 			return
 		}
@@ -465,16 +465,16 @@ func (user *UserInfo) OrgInvite(member *OrgMember, orgID string) (org *Orgnaziti
 
 func (user *UserInfo) OrgRemoveMember(member *OrgMember, orgID string) (org *Orgnazition, err error) {
 	if user.Username == member.MemberName {
-		return nil, errors.New("can't remove yourself.")
+		return nil, ldpErrorNew(ErrCodeActionNotSupport)
 	}
 	org = new(Orgnazition)
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			return nil, errors.New("permission denied.")
+			return nil, ldpErrorNew(ErrCodePermissionDenied)
 		}
 		if !org.IsMemberExist(member) {
-			return nil, errors.New("no such user in the orgnazition.")
+			return nil, ldpErrorNew(ErrCodeUserNotFound)
 		}
 		org = org.RemoveMember(member.MemberName)
 		if _, err = org.Update(); err != nil {
@@ -506,15 +506,15 @@ func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (org *Orgnaz
 	org.ID = orgID
 	if org, err = org.Get(); err == nil {
 		if !org.IsAdmin(user.Username) {
-			return nil, errors.New("permission denied.")
+			return nil, ldpErrorNew(ErrCodePermissionDenied)
 		}
 
 		if org.IsLastAdmin(member.MemberName) {
-			return nil, errors.New("orgnazition needs at least one admin.")
+			return nil, ldpErrorNew(ErrCodeLastAdminRestricted)
 		}
 
 		if !org.IsMemberExist(member) {
-			return nil, errors.New("can't find such username in this orgnazition.")
+			return nil, ldpErrorNew(ErrCodeUserNotFound)
 		}
 
 		for idx, oldMember := range org.MemberList {
@@ -539,7 +539,7 @@ func (user *UserInfo) OrgPrivilege(member *OrgMember, orgID string) (org *Orgnaz
 				}
 			}
 		}
-		return nil, errors.New("no such user.")
+		return nil, ldpErrorNew(ErrCodeUserNotFound)
 	}
 	return
 }
@@ -661,7 +661,7 @@ func (user *UserInfo) AddToVerify() (verifytoken string, err error) {
 func (user *UserInfo) Get() (userinfo *UserInfo, err error) {
 	glog.Info("user", user)
 	if len(user.Username) == 0 {
-		return nil, ErrNotFound
+		return nil, ldpErrorNew(ErrCodeNotFound)
 	}
 
 	if obj, err := dbstore.GetValue(etcdProfilePath(user.Username)); err != nil {

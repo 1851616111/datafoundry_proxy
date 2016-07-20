@@ -12,13 +12,13 @@ func SendVerifyMail(w http.ResponseWriter, r *http.Request, ps httprouter.Params
 	var err error
 
 	if username, err = authedIdentities(r); err != nil {
-		RespError(w, err.Error(), http.StatusUnauthorized)
+		RespError(w, err, http.StatusUnauthorized)
 		return
 	}
 	userinfo := &UserInfo{Username: username}
 	if userinfo, err = userinfo.Get(); err != nil {
 		glog.Error(err)
-		RespError(w, err.Error(), http.StatusBadRequest)
+		RespError(w, err, http.StatusBadRequest)
 		return
 	}
 
