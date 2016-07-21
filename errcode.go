@@ -38,6 +38,11 @@ const (
 	ErrCodeUnknownError = 1600
 )
 
+const (
+	LDAPMagicNumber = 2000
+	EtcdMagicNumber = 3000
+)
+
 var errText = map[int]string{
 	ErrCodeOK:                     "OK",
 	ErrCodeBadRequest:             "Bad request",

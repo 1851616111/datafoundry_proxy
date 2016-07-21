@@ -204,13 +204,13 @@ func genRespJson(httpCode int, err error) *APIResponse {
 		message = ErrText(msgCode)
 	} else {
 		if e, ok := err.(*ldap.Error); ok {
-			msgCode = int(e.ResultCode)+2000
+			msgCode = int(e.ResultCode) + LDAPMagicNumber
 			message = ldap.LDAPResultCodeMap[e.ResultCode]
 		} else if e, ok := err.(etcd.Error); ok {
-			msgCode = e.Code+3000
+			msgCode = e.Code + EtcdMagicNumber
 			message = e.Message
 		} else if e, ok := err.(*etcd.Error); ok {
-			msgCode = e.Code+3000
+			msgCode = e.Code + EtcdMagicNumber
 			message = e.Message
 		} else if e, ok := err.(LdpError); ok {
 			msgCode = e.Code
